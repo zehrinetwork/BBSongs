@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'equalizer_animation.dart';
 import 'music_view_model.dart';
 
 class MusicScreen extends StatefulWidget {
@@ -39,31 +40,47 @@ class _MusicScreenState extends State<MusicScreen> {
             child: ListView.builder(
               itemCount: viewModel.songs.length,
               itemBuilder: (context, index) {
-                final song = viewModel.songs[index];
-                return ListTile(
-                  leading: Image.network(song.image, width: 50, height: 50, fit: BoxFit.cover),
-                  title: Text(song.name),
-                  subtitle: Text(song.description),
-                  trailing: viewModel.isPlayingLoading && viewModel.currentIndex == index
-                      ? const SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : IconButton(
-                    icon: Icon(
-                      viewModel.currentIndex == index && viewModel.isPlaying ? Icons.pause : Icons.play_arrow,
-                    ),
-                    onPressed: () {
-                      if (viewModel.currentIndex != index) {
-                        viewModel.play(index); // Always replay if it's a new selection
-                      } else {
-                        viewModel.isPlaying ? viewModel.pause() : viewModel.play(index);
-                      }
-                    },
+    final song = viewModel.songs[index];
 
-                  ),
-                );
+    return   ListTile(
+    leading: ClipRRect(
+    borderRadius: BorderRadius.circular(8),
+    child: Image.network(song.image, width: 50, height: 50, fit: BoxFit.cover),
+    ),
+    title: Text(song.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+    subtitle: Text(song.description, maxLines: 1, overflow: TextOverflow.ellipsis),
+      trailing: Builder(
+        builder: (_) {
+          if (viewModel.currentIndex == index) {
+            if (viewModel.isPlayingLoading) {
+              return const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              );
+            } else if (viewModel.isPlaying) {
+              return const EqualizerAnimation();
+            } else {
+              return IconButton(
+                icon: const Icon(Icons.play_arrow),
+                onPressed: () => viewModel.play(index),
+              );
+            }
+          } else {
+            return IconButton(
+              icon: const Icon(Icons.play_arrow),
+              onPressed: () => viewModel.play(index),
+            );
+          }
+        },
+      ),
+
+
+    onTap: () {
+    viewModel.play(index);
+    },
+    );
+
               },
             ),
           ),
