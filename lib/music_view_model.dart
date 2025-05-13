@@ -46,17 +46,27 @@ class MusicViewModel extends ChangeNotifier {
     }
   }
 
+
   Future<void> play(int index) async {
-    _isPlayingLoading = true;
-    notifyListeners();
+    final isNewSong = _currentIndex != index;
+
+    if (isNewSong) {
+      _isPlayingLoading = true;
+      notifyListeners();
+    }
+
     try {
-      _currentIndex = index;
-      await _player.setUrl(_songs[_currentIndex].url);
-      await _player.seek(Duration.zero); // ← Ensure playback starts from beginning
+      if (isNewSong) {
+        _currentIndex = index;
+        await _player.setUrl(_songs[_currentIndex].url);
+        await _player.seek(Duration.zero);
+      }
       await _player.play();
     } finally {
-      _isPlayingLoading = false;
-      notifyListeners();
+      if (isNewSong) {
+        _isPlayingLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -108,6 +118,13 @@ class MusicViewModel extends ChangeNotifier {
 
       if (state.processingState == ProcessingState.completed) {
         playNext();
+      }
+    });
+
+    _player.playingStream.listen((isPlaying) {
+      if (isPlaying && _isPlayingLoading) {
+        _isPlayingLoading = false;
+        notifyListeners();
       }
     });
 
