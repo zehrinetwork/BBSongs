@@ -49,10 +49,11 @@ class _MusicScreenState extends State<MusicScreen> {
     ),
     title: Text(song.name, style: const TextStyle(fontWeight: FontWeight.bold)),
     subtitle: Text(song.description, maxLines: 1, overflow: TextOverflow.ellipsis),
+
       trailing: Builder(
         builder: (_) {
           if (viewModel.currentIndex == index) {
-            if (viewModel.isPlayingLoading) {
+            if (viewModel.isPlayingLoading || viewModel.isBuffering) {
               return const SizedBox(
                 height: 24,
                 width: 24,
@@ -76,7 +77,8 @@ class _MusicScreenState extends State<MusicScreen> {
       ),
 
 
-    onTap: () {
+
+      onTap: () {
     viewModel.play(index);
     },
     );

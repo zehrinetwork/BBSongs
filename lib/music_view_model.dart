@@ -88,6 +88,10 @@ class MusicViewModel extends ChangeNotifier {
     await play(nextIndex);
   }
 
+  Future<void> resume() async {
+    await _player.play();
+    notifyListeners();
+  }
 
 
   Future<void> playPrevious() async {
