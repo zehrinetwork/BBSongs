@@ -50,6 +50,11 @@ class _MusicScreenState extends State<MusicScreen> {
     title: Text(song.name, style: const TextStyle(fontWeight: FontWeight.bold)),
     subtitle: Text(song.description, maxLines: 1, overflow: TextOverflow.ellipsis),
 
+
+
+
+
+
       trailing: Builder(
         builder: (_) {
           if (viewModel.currentIndex == index) {
@@ -59,13 +64,8 @@ class _MusicScreenState extends State<MusicScreen> {
                 width: 24,
                 child: CircularProgressIndicator(strokeWidth: 2),
               );
-            } else if (viewModel.isPlaying) {
-              return const EqualizerAnimation();
             } else {
-              return IconButton(
-                icon: const Icon(Icons.play_arrow),
-                onPressed: () => viewModel.play(index),
-              );
+              return EqualizerAnimation(isPaused: !viewModel.isPlaying);
             }
           } else {
             return IconButton(
@@ -75,6 +75,12 @@ class _MusicScreenState extends State<MusicScreen> {
           }
         },
       ),
+
+
+
+
+
+
 
 
 
