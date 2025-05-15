@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
@@ -11,16 +12,23 @@ class MusicViewModel extends ChangeNotifier {
   int _currentIndex = -1;
   bool _isLoading = false;
   bool _isPlayingLoading = false;
+  String? _errorMessage;
+  bool _isOffline = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   bool _isBuffering = false;
   bool get isBuffering => _isBuffering;
+  bool _hasInternet = true;
+  bool get hasInternet => _hasInternet;
+
 
 
   List<Song> get songs => _songs;
   int get currentIndex => _currentIndex;
   bool get isPlaying => _player.playing;
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  bool get isOffline => _isOffline;
   bool get isPlayingLoading => _isPlayingLoading;
   Duration get position => _position;
   Duration get duration => _duration;
@@ -30,9 +38,22 @@ class MusicViewModel extends ChangeNotifier {
     setupPositionListener();
   }
 
+
+
   Future<void> fetchSongs(String apiUrl) async {
     _isLoading = true;
     notifyListeners();
+
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      _hasInternet = false;
+      _isLoading = false;
+      notifyListeners();
+      return;
+    } else {
+      _hasInternet = true;
+    }
+
     try {
       final response = await http.get(Uri.parse(apiUrl));
       if (response.statusCode == 200) {
@@ -40,11 +61,15 @@ class MusicViewModel extends ChangeNotifier {
         _songs.clear();
         _songs.addAll(data.map((e) => Song.fromJson(e)));
       }
+    } catch (e) {
+      // optionally set hasInternet false here on error
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
+
+
 
 
   Future<void> play(int index) async {

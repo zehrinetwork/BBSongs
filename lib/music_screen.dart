@@ -32,11 +32,30 @@ class _MusicScreenState extends State<MusicScreen> {
     final viewModel = Provider.of<MusicViewModel>(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Music Player')),
+
       body: viewModel.isLoading
           ? const Center(child: CircularProgressIndicator())
+          : !viewModel.hasInternet
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('No internet connection'),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                viewModel.fetchSongs(apiUrl); // retry
+              },
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      )
           : Column(
-        children: [
-          Expanded(
+
+      children: [
+
+      Expanded(
             child: ListView.builder(
               itemCount: viewModel.songs.length,
               itemBuilder: (context, index) {
