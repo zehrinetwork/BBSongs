@@ -19,6 +19,10 @@ class _EqualizerAnimationState extends State<EqualizerAnimation>
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    )..repeat(reverse: true);
 
     _initializeAnimations();
   }
