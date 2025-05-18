@@ -86,7 +86,7 @@ class _MusicScreenState extends State<MusicScreen> {
         onTap: () {
           if (viewModel.currentIndex == index) {
             // Same song – toggle
-            viewModel.isPlaying ? viewModel.pause() : viewModel.play(index);
+            viewModel.isPlaying ? viewModel.pause() : viewModel.resume();
           } else {
             // New song – start playing
             viewModel.play(index);

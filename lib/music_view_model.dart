@@ -7,6 +7,9 @@ import 'package:just_audio/just_audio.dart';
 
 import 'model.dart';
 
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class MusicViewModel extends ChangeNotifier {
   final List<Song> _songs = [];
   final AudioPlayer _player = AudioPlayer();
@@ -14,6 +17,7 @@ class MusicViewModel extends ChangeNotifier {
   bool _isLoading = false;
   bool _isPlayingLoading = false;
   String? _errorMessage;
+  int? _retryIndex; // for retrying song when internet is restored
   bool _isOffline = false;
   late final StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   Duration _position = Duration.zero;
@@ -74,6 +78,44 @@ class MusicViewModel extends ChangeNotifier {
   }
 
 
+  /*
+
+  Future<void> play(int index) async {
+    final isNewSong = _currentIndex != index;
+
+    if (isNewSong) {
+      _isPlayingLoading = true;
+      notifyListeners();
+    }
+
+    // ✅ Check real internet access
+    if (!await hasRealInternet()) {
+      _isPlayingLoading = false;
+      notifyListeners();
+      _showSnackBar("No internet connection. Please check your network.");
+      return;
+    }
+
+    try {
+      if (isNewSong) {
+        _currentIndex = index;
+        await _player.setUrl(_songs[_currentIndex].url);
+        await _player.seek(Duration.zero);
+      }
+      await _player.play();
+    } catch (_) {
+      _showSnackBar("Failed to play the song.");
+    } finally {
+      _isPlayingLoading = false;
+      notifyListeners();
+    }
+  }
+
+  */
+
+
+
+
 
 
   Future<void> play(int index) async {
@@ -84,20 +126,43 @@ class MusicViewModel extends ChangeNotifier {
       notifyListeners();
     }
 
+    if (!await hasRealInternet()) {
+      _retryIndex = index; // 👈 remember to retry this later
+      _isPlayingLoading = false;
+      notifyListeners();
+      _showSnackBar("No internet. Will retry when back online.");
+      return;
+    }
+
     try {
-      if (isNewSong) {
-        _currentIndex = index;
-        await _player.setUrl(_songs[_currentIndex].url);
+      _currentIndex = index;
+      _retryIndex = null; // ✅ Clear retry on success
+      if (_player.audioSource == null || isNewSong) {
+        await _player.setUrl(_songs[index].url);
         await _player.seek(Duration.zero);
       }
       await _player.play();
+    } catch (_) {
+      _showSnackBar("Playback failed.");
     } finally {
-      if (isNewSong) {
-        _isPlayingLoading = false;
-        notifyListeners();
-      }
+      _isPlayingLoading = false;
+      notifyListeners();
     }
   }
+
+
+
+
+  void _showSnackBar(String message) {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+
 
 
 
@@ -134,20 +199,47 @@ class MusicViewModel extends ChangeNotifier {
   }
 
 
+
+
   void monitorConnectivity() {
     _connectivitySubscription = Connectivity()
         .onConnectivityChanged
-        .listen((List<ConnectivityResult> results) {
+        .listen((List<ConnectivityResult> results) async {
       final hadInternet = _hasInternet;
-      // Check if any result is not 'none'
       _hasInternet = results.any((r) => r != ConnectivityResult.none);
 
       if (!hadInternet && _hasInternet) {
+        // Internet just restored
         fetchSongs("https://mocki.io/v1/290de512-4dfb-4bd2-9696-d13de5439a00");
+
+        // ✅ Check actual internet access before retry
+        if (_retryIndex != null && await hasRealInternet()) {
+          _showSnackBar("Internet restored. Retrying playback...");
+          play(_retryIndex!);
+        }
       }
+
       notifyListeners();
     });
   }
+
+
+
+
+
+
+  Future<bool> hasRealInternet() async {
+    try {
+      final result = await http.get(Uri.parse('https://www.google.com')).timeout(
+        const Duration(seconds: 3),
+      );
+      return result.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+
 
 
 
@@ -178,6 +270,7 @@ class MusicViewModel extends ChangeNotifier {
         notifyListeners();
       }
     });
+
 
 
 

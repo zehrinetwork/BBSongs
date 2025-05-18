@@ -16,6 +16,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => MusicViewModel(),
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         title: 'Flutter Music App',
         theme: ThemeData(primarySwatch: Colors.blue),
         home: const MusicScreen(),
