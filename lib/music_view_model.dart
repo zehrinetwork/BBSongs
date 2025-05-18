@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,7 @@ class MusicViewModel extends ChangeNotifier {
   bool _isPlayingLoading = false;
   String? _errorMessage;
   bool _isOffline = false;
+  late final StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   bool _isBuffering = false;
@@ -34,8 +36,10 @@ class MusicViewModel extends ChangeNotifier {
   Duration get duration => _duration;
   Song? get currentSong => _currentIndex >= 0 && _currentIndex < _songs.length ? _songs[_currentIndex] : null;
 
+
   MusicViewModel() {
     setupPositionListener();
+    monitorConnectivity();
   }
 
 
@@ -129,6 +133,24 @@ class MusicViewModel extends ChangeNotifier {
     _player.seek(position);
   }
 
+
+  void monitorConnectivity() {
+    _connectivitySubscription = Connectivity()
+        .onConnectivityChanged
+        .listen((List<ConnectivityResult> results) {
+      final hadInternet = _hasInternet;
+      // Check if any result is not 'none'
+      _hasInternet = results.any((r) => r != ConnectivityResult.none);
+
+      if (!hadInternet && _hasInternet) {
+        fetchSongs("https://mocki.io/v1/290de512-4dfb-4bd2-9696-d13de5439a00");
+      }
+      notifyListeners();
+    });
+  }
+
+
+
   void setupPositionListener() {
     _player.positionStream.listen((pos) {
       _position = pos;
@@ -156,6 +178,9 @@ class MusicViewModel extends ChangeNotifier {
         notifyListeners();
       }
     });
+
+
+
 
 
 

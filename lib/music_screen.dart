@@ -30,142 +30,138 @@ class _MusicScreenState extends State<MusicScreen> {
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<MusicViewModel>(context);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (viewModel.hasInternet && !viewModel.isLoading && viewModel.songs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Back online. Reloading songs...')),
+        );
+      }
+    });
+
+
+
+
     return Scaffold(
       appBar: AppBar(title: const Text('Music Player')),
 
-      body: viewModel.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : !viewModel.hasInternet
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('No internet connection'),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                viewModel.fetchSongs(apiUrl); // retry
-              },
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      )
-          : Column(
-
-      children: [
-
-      Expanded(
-            child: ListView.builder(
-              itemCount: viewModel.songs.length,
-              itemBuilder: (context, index) {
-    final song = viewModel.songs[index];
-
-    return   ListTile(
-    leading: ClipRRect(
-    borderRadius: BorderRadius.circular(8),
-    child: Image.network(song.image, width: 50, height: 50, fit: BoxFit.cover),
+    body: Stack(
+    children: [
+    Column(
+    children: [
+    if (!viewModel.hasInternet)
+    Container(
+    width: double.infinity,
+    color: Colors.red,
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: const Center(
+    child: Text(
+    'You are offline',
+    style: TextStyle(color: Colors.white),
     ),
-    title: Text(song.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-    subtitle: Text(song.description, maxLines: 1, overflow: TextOverflow.ellipsis),
+    ),
+    ),
+    Expanded(
+    child: viewModel.isLoading && viewModel.songs.isEmpty
+    ? const Center(child: CircularProgressIndicator())
+        : ListView.builder(
+    itemCount: viewModel.songs.length,
+    itemBuilder: (context, index) {
+    final song = viewModel.songs[index];
+    return
 
 
+      ListTile(
+        leading: Image.network(
+          song.image,
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+        ),
 
+        title: Text(song.name),
+        subtitle: Text(song.description),
 
-
-
-      trailing: Builder(
-        builder: (_) {
+        // 🔑 Whole row toggles play / pause
+        onTap: () {
           if (viewModel.currentIndex == index) {
-            if (viewModel.isPlayingLoading || viewModel.isBuffering) {
-              return const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              );
-            } else {
-              return EqualizerAnimation(isPaused: !viewModel.isPlaying);
-            }
+            // Same song – toggle
+            viewModel.isPlaying ? viewModel.pause() : viewModel.play(index);
           } else {
-            return IconButton(
-              icon: const Icon(Icons.play_arrow),
-              onPressed: () => viewModel.play(index),
-            );
+            // New song – start playing
+            viewModel.play(index);
           }
         },
-      ),
+
+        // 🎛 Shows state only (no extra tap action needed here)
+        trailing: (viewModel.currentIndex == index)
+            ? (viewModel.isPlayingLoading || viewModel.isBuffering)
+            ? const SizedBox(
+          height: 24,
+          width: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        )
+            : EqualizerAnimation(isPaused: !viewModel.isPlaying)
+            : const Icon(Icons.play_arrow),
+      );
 
 
-
-
-
-
-
-
-
-      onTap: () {
-    viewModel.play(index);
     },
-    );
+    ),
+    ),
+    if (viewModel.currentSong != null)
+    // your bottom player UI (slider, duration, controls)
+    // keep it as you already have
+    ...[
+    Slider(
+    value: viewModel.position.inSeconds.toDouble(),
+    max: viewModel.duration.inSeconds.toDouble() > 0
+    ? viewModel.duration.inSeconds.toDouble()
+        : 1.0,
+    onChanged: (value) => viewModel.seekTo(Duration(seconds: value.toInt())),
+    ),
+    Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+    child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+    Text(_formatTime(viewModel.position)),
+    Text(_formatTime(viewModel.duration)),
+    ],
+    ),
+    ),
+    Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+    IconButton(icon: const Icon(Icons.skip_previous), onPressed: viewModel.playPrevious),
+    viewModel.isBuffering
+    ? const SizedBox(
+    height: 40,
+    width: 40,
+    child: CircularProgressIndicator(strokeWidth: 3),
+    )
+        : IconButton(
+    icon: Icon(
+    viewModel.isPlaying
+    ? Icons.pause_circle_filled
+        : Icons.play_circle_fill,
+    ),
+    iconSize: 40,
+    onPressed: () {
+    viewModel.isPlaying
+    ? viewModel.pause()
+        : viewModel.play(viewModel.currentIndex);
+    },
+    ),
+    IconButton(icon: const Icon(Icons.skip_next), onPressed: viewModel.playNext),
+    ],
+    ),
+    ],
+    ],
+    ),
+    ],
+    ));
 
-              },
-            ),
-          ),
-          if (viewModel.currentSong != null)
-            Column(
-              children: [
-                Slider(
-                  value: viewModel.position.inSeconds.toDouble(),
-                  max: viewModel.duration.inSeconds.toDouble() > 0 ? viewModel.duration.inSeconds.toDouble() : 1.0,
-                  onChanged: (value) => viewModel.seekTo(Duration(seconds: value.toInt())),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(_formatTime(viewModel.position)),
-                      Text(_formatTime(viewModel.duration)),
-                    ],
-                  ),
-                ),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.skip_previous),
-                      onPressed: viewModel.currentIndex > 0 ? viewModel.playPrevious : null,
-                    ),
-                    viewModel.isBuffering
-                        ? const SizedBox(
-                      height: 40,
-                      width: 40,
-                      child: CircularProgressIndicator(strokeWidth: 3),
-                    )
-                        : IconButton(
-                      icon: Icon(viewModel.isPlaying
-                          ? Icons.pause_circle_filled
-                          : Icons.play_circle_fill),
-                      iconSize: 40,
-                      onPressed: () {
-                        viewModel.isPlaying
-                            ? viewModel.pause()
-                            : viewModel.play(viewModel.currentIndex);
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.skip_next),
-                      onPressed: viewModel.playNext,
-                    ),
-                  ],
-                ),
-
-
-              ],
-            )
-        ],
-      ),
-    );
   }
 }
