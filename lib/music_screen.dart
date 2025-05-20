@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
 import 'equalizer_animation.dart';
+import 'full_screen_player.dart';
 import 'music_view_model.dart';
 
 class MusicScreen extends StatefulWidget {
@@ -80,12 +81,12 @@ class _MusicScreenState extends State<MusicScreen> {
       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
       child: Container(
       decoration: BoxDecoration(
-      color: Colors.white24,
+      color: Colors.white24.withAlpha(70),
       borderRadius: BorderRadius.circular(20),
       border: Border.all(color: Colors.white24),
       boxShadow: [
       BoxShadow(
-      color: Colors.white24,
+      color: Colors.black12.withAlpha(70),
       blurRadius: 12,
       offset: const Offset(0, 4),
       ),
@@ -201,6 +202,9 @@ class _MusicScreenState extends State<MusicScreen> {
       },
     ),
     ),
+
+
+    /*
     if (viewModel.currentSong != null)
     // your bottom player UI (slider, duration, controls)
     // keep it as you already have
@@ -255,7 +259,215 @@ class _MusicScreenState extends State<MusicScreen> {
     ),
     ],
     ));
+*/
+
+/*
+    if (viewModel.currentSong != null)
+
+      Positioned(
+        left: 16,
+        right: 16,
+        bottom: 20,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white12.withAlpha(70), // modern semi-transparent dark
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(100),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Song Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  viewModel.currentSong!.image,
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Song Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      viewModel.currentSong!.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      viewModel.currentSong!.description,
+                      style: TextStyle(
+                        color: Colors.white.withAlpha(160),
+                        fontSize: 13,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Controls: Previous - Play/Pause - Next
+              IconButton(
+                icon: const Icon(Icons.skip_previous, color: Colors.white),
+                onPressed: viewModel.playPrevious,
+              ),
+              viewModel.isBuffering
+                  ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+                  : IconButton(
+                icon: Icon(
+                  viewModel.isPlaying ? Icons.pause : Icons.play_arrow,
+                  color: Colors.white,
+                ),
+                onPressed: () {
+                  viewModel.isPlaying
+                      ? viewModel.pause()
+                      : viewModel.play(viewModel.currentIndex);
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.skip_next, color: Colors.white),
+                onPressed: viewModel.playNext,
+              ),
+            ],
+          ),
+        ),
+      ),
+
+
+    ]
+    ),
+    ]));
+
+
+ */
+
+    if (viewModel.currentSong != null)
+    Positioned(
+    left: 16,
+    right: 16,
+    bottom: 20,
+    child: GestureDetector(
+    onTap: () => _openFullPlayer(context),
+    onVerticalDragUpdate: (details) {
+    if (details.primaryDelta! < -10) {
+    _openFullPlayer(context);
+    }
+    },
+    child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    decoration: BoxDecoration(
+    color: Colors.grey[900],
+    borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+    children: [
+    // Song Image
+    ClipRRect(
+    borderRadius: BorderRadius.circular(8),
+    child: Image.network(
+    viewModel.currentSong!.image,
+    width: 50,
+    height: 50,
+    fit: BoxFit.cover,
+    ),
+    ),
+    const SizedBox(width: 10),
+
+    // Title & Progress
+    Expanded(
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    Text(
+    viewModel.currentSong!.name,
+    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    ),
+    Slider(
+    value: viewModel.position.inSeconds.toDouble(),
+    max: viewModel.duration.inSeconds.toDouble().clamp(1.0, double.infinity),
+    onChanged: (value) => viewModel.seekTo(Duration(seconds: value.toInt())),
+    activeColor: Colors.white,
+    inactiveColor: Colors.white24,
+    ),
+    ],
+    ),
+    ),
+
+    // Play / Pause
+    IconButton(
+    icon: Icon(
+    viewModel.isPlaying ? Icons.pause : Icons.play_arrow,
+    color: Colors.white,
+    ),
+    onPressed: () {
+    viewModel.isPlaying
+    ? viewModel.pause()
+        : viewModel.play(viewModel.currentIndex);
+    },
+    ),
+    ],
+    ),
+    ),
+    ),
+    )
+
+    ])]));
+
+
+
+
+
 
 
   }
+
+
+
+  void _openFullPlayer(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          expand: true,
+          initialChildSize: 0.9,
+          minChildSize: 0.5,
+          maxChildSize: 1.0,
+          builder: (_, controller) => SingleChildScrollView(
+            controller: controller,
+            child: FullScreenPlayer(), // from full_screen_player.dart
+          ),
+        );
+      },
+    );
+  }
+
 }
+
