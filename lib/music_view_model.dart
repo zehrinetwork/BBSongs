@@ -111,7 +111,7 @@ class MusicViewModel extends ChangeNotifier {
     }
   }
 
-  */
+
 
 
 
@@ -149,6 +149,36 @@ class MusicViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+*/
+
+
+  Future<void> play(int index) async {
+    final isNewSong = _currentIndex != index;
+
+    _isPlayingLoading = true;
+    notifyListeners();
+
+    try {
+      if (isNewSong) {
+        // Stop current song *immediately* if different
+        await _player.stop();
+        _currentIndex = index;
+        await _player.setUrl(_songs[index].url);
+        await _player.seek(Duration.zero);
+      }
+
+      await _player.play();
+    } catch (e) {
+      // Optionally handle error
+    } finally {
+      _isPlayingLoading = false;
+      notifyListeners();
+    }
+  }
+
+
+
+
 
 
 
