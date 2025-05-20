@@ -52,7 +52,7 @@ class _MusicScreenState extends State<MusicScreen> {
     if (!viewModel.hasInternet)
     Container(
     width: double.infinity,
-    color: Colors.red,
+    color: Colors.orangeAccent,
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: const Center(
     child: Text(
@@ -151,7 +151,9 @@ class _MusicScreenState extends State<MusicScreen> {
     onPressed: () {
     viewModel.isPlaying
     ? viewModel.pause()
-        : viewModel.play(viewModel.currentIndex);
+        : viewModel.currentSong != null ? viewModel.resume()
+          : viewModel.play(viewModel.currentIndex);
+
     },
     ),
     IconButton(icon: const Icon(Icons.skip_next), onPressed: viewModel.playNext),
