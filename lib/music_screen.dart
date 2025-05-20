@@ -1,6 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
+import 'dart:ui';
 import 'equalizer_animation.dart';
 import 'music_view_model.dart';
 
@@ -70,44 +72,133 @@ class _MusicScreenState extends State<MusicScreen> {
     final song = viewModel.songs[index];
     return
 
-
-      ListTile(
-        leading: Image.network(
-          song.image,
-          width: 50,
-          height: 50,
-          fit: BoxFit.cover,
-        ),
-
-        title: Text(song.name),
-        subtitle: Text(song.description),
-
-        // 🔑 Whole row toggles play / pause
-        onTap: () {
-          if (viewModel.currentIndex == index) {
-            // Same song – toggle
-            viewModel.isPlaying ? viewModel.pause() : viewModel.resume();
-          } else {
-            // New song – start playing
-            viewModel.play(index);
-          }
-        },
-
-        // 🎛 Shows state only (no extra tap action needed here)
-        trailing: (viewModel.currentIndex == index)
-            ? (viewModel.isPlayingLoading || viewModel.isBuffering)
-            ? const SizedBox(
-          height: 24,
-          width: 24,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        )
-            : EqualizerAnimation(isPaused: !viewModel.isPlaying)
-            : const Icon(Icons.play_arrow),
+      Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
+      child: ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+      child: Container(
+      decoration: BoxDecoration(
+      color: Colors.white24,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: Colors.white24),
+      boxShadow: [
+      BoxShadow(
+      color: Colors.white24,
+      blurRadius: 12,
+      offset: const Offset(0, 4),
+      ),
+      ],
+      ),
+      child: InkWell(
+      onTap: () {
+      if (viewModel.currentIndex == index) {
+      viewModel.isPlaying ? viewModel.pause() : viewModel.play(index);
+      } else {
+      viewModel.play(index);
+      }
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Row(
+      children: [
+      ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: CachedNetworkImage(
+      imageUrl: song.image,
+      width: 60,
+      height: 60,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => const SizedBox(
+      width: 60,
+      height: 60,
+      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+      errorWidget: (context, url, error) => const Icon(Icons.error),
+      ),
+      ),
+      const SizedBox(width: 14),
+      Expanded(
+      child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+      Text(
+      song.name,
+      style: GoogleFonts.poppins(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      color: Colors.white,
+      ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+      song.description,
+      style: GoogleFonts.poppins(
+      fontSize: 13,
+      color: Colors.white70,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      ),
+      ],
+      ),
+      ),
+      const SizedBox(width: 8),
+      Builder(
+      builder: (_) {
+      if (viewModel.currentIndex == index) {
+      if (viewModel.isPlayingLoading || viewModel.isBuffering) {
+      return const SizedBox(
+      height: 24,
+      width: 24,
+      child: CircularProgressIndicator(
+      strokeWidth: 2,
+      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+      ),
+      );
+      } else {
+      return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+      if (viewModel.isPlaying) {
+      viewModel.pause();
+      } else {
+      viewModel.play(index);
+      }
+      },
+      child: Padding(
+      padding: const EdgeInsets.all(4.0),
+      child: EqualizerAnimation(isPaused: !viewModel.isPlaying),
+      ),
+      );
+      }
+      } else {
+      return IconButton(
+      icon: const Icon(Icons.play_arrow, size: 28, color: Colors.white),
+      onPressed: () => viewModel.play(index),
+      );
+      }
+      },
+      ),
+      ],
+      ),
+      ),
+      ),
+      ),
+      ),
+      ),
       );
 
 
 
-    },
+
+
+
+
+
+      },
     ),
     ),
     if (viewModel.currentSong != null)
