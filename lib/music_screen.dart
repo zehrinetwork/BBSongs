@@ -365,64 +365,100 @@ class _MusicScreenState extends State<MusicScreen> {
 
  */
 
-    if (viewModel.currentSong != null)
+
+      // ───────── Mini-Player Widget (place inside Stack) ─────────
+      if (viewModel.currentSong != null)
+        AnimatedSlide(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOut,
+          offset: Offset.zero,               // slides up from bottom
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 400),
+            opacity: 1.0,                    // fades in
+            child:
+
     Positioned(
-    left: 16,
-    right: 16,
-    bottom: 20,
+    left: 0,
+    right: 0,
+    bottom: 0,
     child: GestureDetector(
-    onTap: () => _openFullPlayer(context),
-    onVerticalDragUpdate: (details) {
-    if (details.primaryDelta! < -10) {
-    _openFullPlayer(context);
-    }
+    onVerticalDragUpdate: (d) {
+    if (d.primaryDelta! < -10) _openFullPlayer(context);
     },
+    onTap: () => _openFullPlayer(context),
     child: Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     decoration: BoxDecoration(
-    color: Colors.grey[900],
-    borderRadius: BorderRadius.circular(12),
+    color: Colors.black.withOpacity(0.95),
+    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+    boxShadow: [
+    BoxShadow(
+    color: Colors.black.withOpacity(0.3),
+    blurRadius: 10,
+    offset: const Offset(0, -2),
     ),
-    child: Row(
+    ],
+    ),
+    child: Column(
+    mainAxisSize: MainAxisSize.min,
     children: [
-    // Song Image
+    // ─── Controls Row ───
+    Row(
+    children: [
     ClipRRect(
     borderRadius: BorderRadius.circular(8),
     child: Image.network(
     viewModel.currentSong!.image,
-    width: 50,
-    height: 50,
+    width: 48,
+    height: 48,
     fit: BoxFit.cover,
     ),
     ),
-    const SizedBox(width: 10),
-
-    // Title & Progress
+    const SizedBox(width: 12),
     Expanded(
     child: Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
     Text(
     viewModel.currentSong!.name,
-    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    style: const TextStyle(
+    color: Colors.white,
+    fontWeight: FontWeight.w600,
+    fontSize: 14,
+    ),
     maxLines: 1,
     overflow: TextOverflow.ellipsis,
     ),
-    Slider(
-    value: viewModel.position.inSeconds.toDouble(),
-    max: viewModel.duration.inSeconds.toDouble().clamp(1.0, double.infinity),
-    onChanged: (value) => viewModel.seekTo(Duration(seconds: value.toInt())),
-    activeColor: Colors.white,
-    inactiveColor: Colors.white24,
+    Text(
+    viewModel.currentSong!.description,
+    style: const TextStyle(
+    color: Colors.white70,
+    fontSize: 12,
+    ),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
     ),
     ],
     ),
     ),
-
-    // Play / Pause
     IconButton(
+    icon: const Icon(Icons.skip_previous, color: Colors.white),
+    onPressed: viewModel.playPrevious,
+    ),
+    viewModel.isBuffering
+    ? const SizedBox(
+    height: 24,
+    width: 24,
+    child: CircularProgressIndicator(
+    strokeWidth: 2,
+    color: Colors.white,
+    ),
+    )
+        : IconButton(
     icon: Icon(
-    viewModel.isPlaying ? Icons.pause : Icons.play_arrow,
+    viewModel.isPlaying
+    ? Icons.pause
+        : Icons.play_arrow,
     color: Colors.white,
     ),
     onPressed: () {
@@ -431,13 +467,56 @@ class _MusicScreenState extends State<MusicScreen> {
         : viewModel.play(viewModel.currentIndex);
     },
     ),
+    IconButton(
+    icon: const Icon(Icons.skip_next, color: Colors.white),
+    onPressed: viewModel.playNext,
+    ),
+    ],
+    ),
+
+    // ─── Slider ───
+    Slider(
+    value: viewModel.position.inSeconds.toDouble(),
+    max: viewModel.duration.inSeconds > 0
+    ? viewModel.duration.inSeconds.toDouble()
+        : 1.0,
+    onChanged: (v) =>
+    viewModel.seekTo(Duration(seconds: v.toInt())),
+    activeColor: Colors.white,
+    inactiveColor: Colors.white24,
+    ),
+
+    // ─── Timer Text ───
+    Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+    Text(
+    _formatTime(viewModel.position),
+    style: const TextStyle(color: Colors.white70, fontSize: 12),
+    ),
+    Text(
+    _formatTime(viewModel.duration),
+    style: const TextStyle(color: Colors.white70, fontSize: 12),
+    ),
+    ],
+    ),
     ],
     ),
     ),
     ),
-    )
+    ),
+
+
+
+
+    ),
+        ),
+
+
+
 
     ])]));
+
 
 
 

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'music_view_model.dart';
@@ -19,100 +21,141 @@ class FullScreenPlayer extends StatelessWidget {
 
     if (song == null) return const SizedBox();
 
-    return Container(
-      color: Colors.black,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag Handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(100),
-              borderRadius: BorderRadius.circular(2),
-            ),
+    return
+      Stack(
+      children: [
+        // Blur layer
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            color: Colors.black.withAlpha(166), // Dim the background
           ),
-          const SizedBox(height: 20),
+        ),
 
-          // Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.network(song.image, width: 300, height: 300, fit: BoxFit.cover),
-          ),
-          const SizedBox(height: 30),
-
-          // Song Info
-          Text(
-            song.name,
-            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            song.description,
-            style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 16),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 30),
-
-          // Slider
-          Slider(
-            value: viewModel.position.inSeconds.toDouble(),
-            max: viewModel.duration.inSeconds.toDouble() > 0
-                ? viewModel.duration.inSeconds.toDouble()
-                : 1.0,
-            onChanged: (value) =>
-                viewModel.seekTo(Duration(seconds: value.toInt())),
-            activeColor: Colors.white,
-            inactiveColor: Colors.white24,
-          ),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        // Foreground UI
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_formatTime(viewModel.position), style: const TextStyle(color: Colors.white)),
-              Text(_formatTime(viewModel.duration), style: const TextStyle(color: Colors.white)),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // Controls
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.skip_previous, size: 32),
-                color: Colors.white,
-                onPressed: viewModel.playPrevious,
-              ),
-              const SizedBox(width: 20),
-              viewModel.isBuffering
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : IconButton(
-                icon: Icon(
-                  viewModel.isPlaying ? Icons.pause_circle : Icons.play_circle,
-                  size: 48,
-                  color: Colors.white,
+              // Drag handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(100),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                onPressed: () {
-                  viewModel.isPlaying
-                      ? viewModel.pause()
-                      : viewModel.play(viewModel.currentIndex);
-                },
               ),
-              const SizedBox(width: 20),
-              IconButton(
-                icon: const Icon(Icons.skip_next, size: 32),
-                color: Colors.white,
-                onPressed: viewModel.playNext,
+              const SizedBox(height: 20),
+
+              // Album Art
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.network(song.image, width: 300, height: 300, fit: BoxFit.cover),
               ),
+              const SizedBox(height: 30),
+
+              // Song Info
+              Text(
+                song.name,
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                song.description,
+                style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 30),
+
+              // Slider
+              Slider(
+                value: viewModel.position.inSeconds.toDouble(),
+                max: viewModel.duration.inSeconds.toDouble() > 0
+                    ? viewModel.duration.inSeconds.toDouble()
+                    : 1.0,
+                onChanged: (value) =>
+                    viewModel.seekTo(Duration(seconds: value.toInt())),
+                activeColor: Colors.white,
+                inactiveColor: Colors.white24,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(_formatTime(viewModel.position), style: const TextStyle(color: Colors.white)),
+                  Text(_formatTime(viewModel.duration), style: const TextStyle(color: Colors.white)),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Controls
+
+              // Stylish Playback Controls (Above Slider)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildControlButton(Icons.skip_previous, onTap: viewModel.playPrevious),
+                  const SizedBox(width: 20),
+                  viewModel.isBuffering
+                      ? const SizedBox(
+                    width: 50,
+                    height: 50,
+                    child: CircularProgressIndicator(color: Colors.white),
+                  )
+                      : _buildControlButton(
+                    viewModel.isPlaying ? Icons.pause : Icons.play_arrow,
+                    size: 60,
+                    iconColor: Colors.black,
+                    backgroundColor: Colors.white,
+                    onTap: () {
+                      viewModel.isPlaying
+                          ? viewModel.pause()
+                          : viewModel.play(viewModel.currentIndex);
+                    },
+                  ),
+                  const SizedBox(width: 20),
+                  _buildControlButton(Icons.skip_next, onTap: viewModel.playNext),
+                ],
+              ),
+              const SizedBox(height: 30),
+
+
             ],
           ),
-        ],
+        ),
+      ],
+    );
+
+  }
+
+  Widget _buildControlButton(
+      IconData icon, {
+        required VoidCallback onTap,
+        double size = 40,
+        Color backgroundColor = Colors.white24,
+        Color iconColor = Colors.white,
+      }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size + 20,
+        height: size + 20,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Icon(icon, size: size, color: iconColor),
       ),
     );
   }
+
 }
