@@ -18,6 +18,7 @@ class MusicViewModel extends ChangeNotifier {
   bool _isPlayingLoading = false;
   String? _errorMessage;
   int? _retryIndex; // for retrying song when internet is restored
+  Timer? _throttleTimer;
   bool _isOffline = false;
   late final StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   ProcessingState _playerState = ProcessingState.idle;
@@ -238,22 +239,31 @@ class MusicViewModel extends ChangeNotifier {
 
 
 
+  void _throttledNotifyListeners() {
+    if (_throttleTimer?.isActive ?? false) return;
+    _throttleTimer = Timer(const Duration(milliseconds: 250), () {
+      notifyListeners();
+    });
+  }
+
+
+
 
   void setupPositionListener() {
     _player.positionStream.listen((pos) {
       _position = pos;
-      notifyListeners();
+      _throttledNotifyListeners();
     });
 
     _player.durationStream.listen((dur) {
       if (dur != null) {
         _duration = dur;
-        notifyListeners();
+        _throttledNotifyListeners();
       }
     });
     _player.playerStateStream.listen((state) {
       _isBuffering = state.processingState == ProcessingState.buffering;
-      notifyListeners();
+      _throttledNotifyListeners();
 
       if (state.processingState == ProcessingState.completed) {
         playNext();
@@ -264,14 +274,14 @@ class MusicViewModel extends ChangeNotifier {
     _player.playingStream.listen((isPlaying) {
       if (isPlaying && _isPlayingLoading) {
         _isPlayingLoading = false;
-        notifyListeners();
+        _throttledNotifyListeners();
       }
     });
 
     _player.playerStateStream.listen((state) {
       _isBuffering = state.processingState == ProcessingState.buffering;
       _playerState = state.processingState;
-      notifyListeners();
+      _throttledNotifyListeners();
     });
 
 
