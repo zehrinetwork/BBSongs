@@ -20,6 +20,7 @@ class MusicViewModel extends ChangeNotifier {
   int? _retryIndex; // for retrying song when internet is restored
   bool _isOffline = false;
   late final StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
+  ProcessingState _playerState = ProcessingState.idle;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   bool _isBuffering = false;
@@ -36,6 +37,7 @@ class MusicViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isOffline => _isOffline;
   bool get isPlayingLoading => _isPlayingLoading;
+  ProcessingState get playerState => _playerState;
   Duration get position => _position;
   Duration get duration => _duration;
   Song? get currentSong => _currentIndex >= 0 && _currentIndex < _songs.length ? _songs[_currentIndex] : null;
@@ -78,7 +80,37 @@ class MusicViewModel extends ChangeNotifier {
   }
 
 
-  /*
+
+
+/*
+  Future<void> play(int index) async {
+    final isNewSong = _currentIndex != index;
+
+    // 🔥 Trigger spinner right away
+    _currentIndex = index; // ✅ Set currentIndex early
+    _isPlayingLoading = true;
+    notifyListeners();
+
+    try {
+      if (isNewSong) {
+        await _player.stop();
+        await _player.setUrl(_songs[index].url);
+        await _player.seek(Duration.zero);
+      }
+
+      await _player.play();
+    } catch (e) {
+      // Optionally log error or show snackbar
+    } finally {
+      _isPlayingLoading = false;
+      notifyListeners();
+    }
+  }
+
+
+*/
+
+
 
   Future<void> play(int index) async {
     final isNewSong = _currentIndex != index;
@@ -86,14 +118,6 @@ class MusicViewModel extends ChangeNotifier {
     if (isNewSong) {
       _isPlayingLoading = true;
       notifyListeners();
-    }
-
-    // ✅ Check real internet access
-    if (!await hasRealInternet()) {
-      _isPlayingLoading = false;
-      notifyListeners();
-      _showSnackBar("No internet connection. Please check your network.");
-      return;
     }
 
     try {
@@ -103,80 +127,13 @@ class MusicViewModel extends ChangeNotifier {
         await _player.seek(Duration.zero);
       }
       await _player.play();
-    } catch (_) {
-      _showSnackBar("Failed to play the song.");
     } finally {
-      _isPlayingLoading = false;
-      notifyListeners();
-    }
-  }
-
-
-
-
-
-
-
-
-  Future<void> play(int index) async {
-    final isNewSong = _currentIndex != index;
-
-    if (isNewSong) {
-      _isPlayingLoading = true;
-      notifyListeners();
-    }
-
-    if (!await hasRealInternet()) {
-      _retryIndex = index; // 👈 remember to retry this later
-      _isPlayingLoading = false;
-      notifyListeners();
-      _showSnackBar("No internet. Will retry when back online.");
-      return;
-    }
-
-    try {
-      _currentIndex = index;
-      _retryIndex = null; // ✅ Clear retry on success
-      if (_player.audioSource == null || isNewSong) {
-        await _player.setUrl(_songs[index].url);
-        await _player.seek(Duration.zero);
-      }
-      await _player.play();
-    } catch (_) {
-      _showSnackBar("Playback failed.");
-    } finally {
-      _isPlayingLoading = false;
-      notifyListeners();
-    }
-  }
-*/
-
-
-  Future<void> play(int index) async {
-    final isNewSong = _currentIndex != index;
-
-    _isPlayingLoading = true;
-    notifyListeners();
-
-    try {
       if (isNewSong) {
-        // Stop current song *immediately* if different
-        await _player.stop();
-        _currentIndex = index;
-        await _player.setUrl(_songs[index].url);
-        await _player.seek(Duration.zero);
+        _isPlayingLoading = false;
+        notifyListeners();
       }
-
-      await _player.play();
-    } catch (e) {
-      // Optionally handle error
-    } finally {
-      _isPlayingLoading = false;
-      notifyListeners();
     }
   }
-
-
 
 
 
@@ -206,16 +163,23 @@ class MusicViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+
   Future<void> playNext() async {
     if (_songs.isEmpty) return;
     final nextIndex = (_currentIndex + 1) % _songs.length;
     await play(nextIndex);
   }
 
+
+
+
+
   Future<void> resume() async {
     await _player.play();
     notifyListeners();
   }
+
+
 
 
   Future<void> playPrevious() async {
@@ -224,6 +188,8 @@ class MusicViewModel extends ChangeNotifier {
     }
   }
 
+
+  
   void seekTo(Duration position) {
     _player.seek(position);
   }
@@ -294,6 +260,7 @@ class MusicViewModel extends ChangeNotifier {
       }
     });
 
+
     _player.playingStream.listen((isPlaying) {
       if (isPlaying && _isPlayingLoading) {
         _isPlayingLoading = false;
@@ -301,8 +268,11 @@ class MusicViewModel extends ChangeNotifier {
       }
     });
 
-
-
+    _player.playerStateStream.listen((state) {
+      _isBuffering = state.processingState == ProcessingState.buffering;
+      _playerState = state.processingState;
+      notifyListeners();
+    });
 
 
 
