@@ -42,6 +42,7 @@ class MusicViewModel extends ChangeNotifier {
   Duration get position => _position;
   Duration get duration => _duration;
   Song? get currentSong => _currentIndex >= 0 && _currentIndex < _songs.length ? _songs[_currentIndex] : null;
+  bool get isActuallyPlaying => _player.playing && _playerState == ProcessingState.ready;
 
 
   MusicViewModel() {
@@ -111,7 +112,7 @@ class MusicViewModel extends ChangeNotifier {
 
 */
 
-
+/*
 
   Future<void> play(int index) async {
     final isNewSong = _currentIndex != index;
@@ -133,6 +134,41 @@ class MusicViewModel extends ChangeNotifier {
         _isPlayingLoading = false;
         notifyListeners();
       }
+    }
+  }
+
+*/
+
+  Future<void> play(int index) async {
+    final isNewSong = _currentIndex != index;
+
+    if (isNewSong) {
+      _isPlayingLoading = true;
+      notifyListeners();
+    }
+
+    try {
+      if (isNewSong) {
+        _currentIndex = index;
+        await _player.setUrl(_songs[_currentIndex].url);
+        await _player.seek(Duration.zero);
+      }
+
+      await _player.play();
+    } catch (e) {
+      _showSnackBar("Failed to play song: ${_songs[index].name}");
+
+      _isPlayingLoading = false;
+      notifyListeners();
+
+      // Forcefully stop playback to update play/pause UI correctly
+      await _player.stop();
+      return;
+    }
+
+    if (isNewSong) {
+      _isPlayingLoading = false;
+      notifyListeners();
     }
   }
 
@@ -278,12 +314,23 @@ class MusicViewModel extends ChangeNotifier {
       }
     });
 
+    /*
     _player.playerStateStream.listen((state) {
       _isBuffering = state.processingState == ProcessingState.buffering;
       _playerState = state.processingState;
       _throttledNotifyListeners();
     });
+*/
 
+    _player.playerStateStream.listen((state) {
+      _playerState = state.processingState;
+      _isBuffering = state.processingState == ProcessingState.buffering;
+
+      if (state.processingState == ProcessingState.completed) {
+        playNext();
+      }
+       _throttledNotifyListeners();
+    });
 
 
 

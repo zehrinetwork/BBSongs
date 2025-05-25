@@ -466,7 +466,7 @@ class _MusicScreenState extends State<MusicScreen> {
     )
         : IconButton(
     icon: Icon(
-    viewModel.isPlaying ? Icons.pause : Icons.play_arrow,
+    viewModel.isActuallyPlaying ? Icons.pause : Icons.play_arrow,
     color: Colors.white,
     ),
     onPressed: () {
