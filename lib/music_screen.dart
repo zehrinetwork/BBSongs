@@ -411,13 +411,22 @@ class _MusicScreenState extends State<MusicScreen> {
                             // ─── Controls Row ───
                             Row(
                               children: [
+
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: Image.network(
                                     viewModel.currentSong!.image,
-                                    width: 48,
-                                    height: 48,
+                                    width: 50,
+                                    height: 50,
                                     fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/default_cover.png',
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
                                   ),
                                 ),
                                 const SizedBox(width: 12),
