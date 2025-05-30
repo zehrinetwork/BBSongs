@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
 import 'equalizer_animation.dart';
@@ -155,20 +156,23 @@ class _MusicScreenState extends State<MusicScreen> {
                                         const SizedBox(width: 8),
                                         Builder(
                                           builder: (_) {
+                                            if (viewModel.currentIndex ==
+                                                index) {
+                                              if (viewModel.isPlayingLoading ||
+                                                  viewModel.isBuffering) {
+                                                return const SizedBox(
+                                                  height: 24,
+                                                  width: 24,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor: AlwaysStoppedAnimation<
+                                                        Color>(Colors.white),
+                                                  ),
+                                                );
+                                              }
 
-
-                                                if (viewModel.currentIndex == index) {
-                                                  if (viewModel.isPlayingLoading || viewModel.isBuffering ) {
-                                                    return const SizedBox(
-                                                      height: 24,
-                                                      width: 24,
-                                                      child: CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                      ),
-                                                    );
-                                                  }
-
+                                              //       Just Test
+/*
                                                   // Show equalizer only if the song is fully loaded and playing
                                                   if (viewModel.isPlaying) {
                                                     return GestureDetector(
@@ -180,25 +184,41 @@ class _MusicScreenState extends State<MusicScreen> {
                                                       ),
                                                     );
                                                   }
+                                                  */
 
-                                                  // Song is ready but paused
-                                                  return IconButton(
-                                                    icon: const Icon(Icons.play_arrow, size: 28, color: Colors.white),
-                                                    onPressed: () => viewModel.play(index),
-                                                  );
-                                                }
+                                              if (viewModel.isPlaying &&
+                                                  !viewModel.isBuffering &&
+                                                  viewModel.playerState ==
+                                                      ProcessingState.ready) {
+                                                return GestureDetector(
+                                                  behavior: HitTestBehavior
+                                                      .translucent,
+                                                  onTap: () =>
+                                                      viewModel.pause(),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets
+                                                        .all(4.0),
+                                                    child: EqualizerAnimation(
+                                                        isPaused: false),
+                                                  ),
+                                                );
+                                              }
 
-                                                // For all other songs
+
+
+                                            }
+
+
+                                            // For all other songs
+
                                                 return IconButton(
                                                   icon: const Icon(Icons.play_arrow, size: 28, color: Colors.white),
                                                   onPressed: () => viewModel.play(index),
                                                 );
+
+
                                               },
-
-
-
-
-                                        ),
+                                          ),
                                       ],
                                     ),
                                   ),

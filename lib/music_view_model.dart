@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'model.dart';
 
@@ -139,6 +142,14 @@ class MusicViewModel extends ChangeNotifier {
 
 */
 
+  Future<String> _getLocalFilePath(String url) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final filename = Uri.parse(url).pathSegments.last;
+    return '${dir.path}/$filename';
+  }
+
+
+/*
   Future<void> play(int index) async {
     final isNewSong = _currentIndex != index;
 
@@ -156,7 +167,7 @@ class MusicViewModel extends ChangeNotifier {
 
       await _player.play();
     } catch (e) {
-      _showSnackBar("Failed to play song: ${_songs[index].name}");
+      _showSnackBar("Failed to play ${_songs[index].name}");
 
       _isPlayingLoading = false;
       notifyListeners();
@@ -171,9 +182,52 @@ class MusicViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+*/
 
+  Future<void> play(int index) async {
+    final song = _songs[index];
+    final isNewSong = _currentIndex != index;
 
+    if (isNewSong) {
+      _isPlayingLoading = true;
+      notifyListeners();
 
+      _currentIndex = index;
+      final filePath = await _getLocalFilePath(song.url);
+      final file = File(filePath);
+
+      try {
+        if (await file.exists()) {
+          await _player.setFilePath(filePath);
+        } else {
+          // Start streaming & download in background
+          await _player.setUrl(song.url);
+
+          // ⬇️ Download in parallel
+          _downloadSong(song.url, filePath);
+        }
+
+        await _player.seek(Duration.zero);
+        await _player.play();
+      } catch (e) {
+        _errorMessage = "Playback failed";
+      } finally {
+        _isPlayingLoading = false;
+        notifyListeners();
+      }
+    } else {
+      await _player.play();
+    }
+  }
+
+  void _downloadSong(String url, String savePath) async {
+    try {
+      final dio = Dio();
+      await dio.download(url, savePath);
+    } catch (e) {
+      debugPrint("Failed to cache song: $e");
+    }
+  }
 
 
 

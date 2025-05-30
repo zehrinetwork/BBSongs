@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import 'music_view_model.dart';
 
@@ -98,7 +99,7 @@ class FullScreenPlayer extends StatelessWidget {
                 children: [
                   _buildControlButton(Icons.skip_previous, onTap: viewModel.playPrevious),
                   const SizedBox(width: 20),
-                  viewModel.isBuffering
+                 ( viewModel.playerState == ProcessingState.buffering )
                       ? const SizedBox(
                     width: 50,
                     height: 50,
@@ -133,7 +134,7 @@ class FullScreenPlayer extends StatelessWidget {
   Widget _buildControlButton(
       IconData icon, {
         required VoidCallback onTap,
-        double size = 40,
+        double size = 30,
         Color backgroundColor = Colors.white24,
         Color iconColor = Colors.white,
       }) {
