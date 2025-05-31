@@ -31,9 +31,12 @@ class MusicViewModel extends ChangeNotifier {
   bool get isBuffering => _isBuffering;
   bool _hasInternet = true;
   bool get hasInternet => _hasInternet;
+  final List<Song> _cachedSongs = [];
 
 
 
+
+  List<Song> get cachedSongs => _cachedSongs;
   List<Song> get songs => _songs;
   int get currentIndex => _currentIndex;
   bool get isPlaying => _player.playing;
@@ -54,7 +57,7 @@ class MusicViewModel extends ChangeNotifier {
   }
 
 
-
+/*
   Future<void> fetchSongs(String apiUrl) async {
     _isLoading = true;
     notifyListeners();
@@ -82,6 +85,95 @@ class MusicViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+  */
+
+
+  //works fine for offline  badge with network
+ /*
+  Future<void> fetchSongs(String apiUrl) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final connectivityResult = await Connectivity().checkConnectivity();
+    _hasInternet = !connectivityResult.contains(ConnectivityResult.none);
+
+    if (_hasInternet) {
+      try {
+        final response = await http.get(Uri.parse(apiUrl));
+        if (response.statusCode == 200) {
+          List<dynamic> data = json.decode(response.body);
+          _songs.clear();
+          _songs.addAll(data.map((e) => Song.fromJson(e)));
+          await _scanCachedSongs();
+        }
+      } catch (_) {
+        await _scanCachedSongs(); // fallback if API fails
+      }
+    } else {
+      await _scanCachedSongs(); // fallback if offline
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+*/
+
+  Future<void> fetchSongs(String apiUrl) async {
+    _isLoading = true;
+    notifyListeners();
+
+    // ── Determine connectivity
+    final connectivityResult = await Connectivity().checkConnectivity();
+    _hasInternet = !connectivityResult.contains(ConnectivityResult.none);
+
+    // ── If offline, first try to load the saved manifest
+    if (!_hasInternet) {
+      final manifestFile = await _getSongManifestFile();
+      if (await manifestFile.exists()) {
+        try {
+          final rawJson = await manifestFile.readAsString();
+          final rawList = jsonDecode(rawJson) as List<dynamic>;
+          _songs
+            ..clear()
+            ..addAll(rawList.map((e) => Song.fromJson(e)));
+        } catch (_) {
+          // ignore corrupt manifest
+        }
+      }
+      // scan cache for local files
+      await _scanCachedSongs();
+    } else {
+      // ── Online path: fetch from API
+      try {
+        final response = await http.get(Uri.parse(apiUrl));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as List<dynamic>;
+
+          // update in-memory list
+          _songs
+            ..clear()
+            ..addAll(data.map((e) => Song.fromJson(e)));
+
+          // save manifest for future offline launches
+          final manifestFile = await _getSongManifestFile();
+          await manifestFile.writeAsString(jsonEncode(data));
+
+          // scan cache so 'cached' badges show
+          await _scanCachedSongs();
+        } else {
+          // API failed - try whatever cache we have
+          await _scanCachedSongs();
+        }
+      } catch (_) {
+        // network error - fall back to cached manifest & files
+        await _scanCachedSongs();
+      }
+    }
+
+    _isLoading = false;
+    notifyListeners();
   }
 
 
@@ -255,13 +347,18 @@ class MusicViewModel extends ChangeNotifier {
   }
 
 
+
   Future<void> playNext() async {
     if (_songs.isEmpty) return;
+
+    if (_songs.length == 1) {
+      // Only one song — restart it
+      play(0);
+      return;
+    }
     final nextIndex = (_currentIndex + 1) % _songs.length;
     await play(nextIndex);
   }
-
-
 
 
 
@@ -272,18 +369,74 @@ class MusicViewModel extends ChangeNotifier {
 
 
 
-
+/*
   Future<void> playPrevious() async {
+
+    if (_songs.isEmpty) return;
+
+    if (_songs.length == 1) {
+      // Only one song — restart it
+      play(0);
+      return;
+    }
+
     if (_currentIndex > 0) {
       await play(_currentIndex - 1);
     }
   }
+*/
+  Future<void> playPrevious() async {
+
+    if (_songs.isEmpty) return;
+
+    if (_songs.length == 1) {
+      // Only one song — restart it
+      play(0);
+      return;
+    }
+
+
+    final prevIndex =
+        (_currentIndex - 1 + _songs.length) % _songs.length;
+    await play(prevIndex);
+
+  }
+
+
 
 
   
   void seekTo(Duration position) {
     _player.seek(position);
   }
+
+
+
+  Future<void> _scanCachedSongs() async {
+    _cachedSongs.clear();
+
+    final dir = await getApplicationDocumentsDirectory();
+    for (var song in _songs) {
+      final filename = Uri.parse(song.url).pathSegments.last;
+      final filePath = '${dir.path}/$filename';
+      final file = File(filePath);
+      if (await file.exists()) {
+        _cachedSongs.add(song);
+      }
+    }
+
+    if (!_hasInternet && _cachedSongs.isNotEmpty) {
+      _songs.clear();
+      _songs.addAll(_cachedSongs);
+    }
+  }
+
+
+  Future<File> _getSongManifestFile() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File('${dir.path}/songs_manifest.json');
+  }
+
 
 
 

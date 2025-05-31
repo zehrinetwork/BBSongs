@@ -53,7 +53,7 @@ class _MusicScreenState extends State<MusicScreen> {
             if (!viewModel.hasInternet)
               Container(
                 width: double.infinity,
-                color: Colors.orangeAccent,
+                color: Colors.grey,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: const Center(
                   child: Text(
@@ -62,6 +62,8 @@ class _MusicScreenState extends State<MusicScreen> {
                   ),
                 ),
               ),
+
+  /*
             Expanded(
               child: viewModel.isLoading && viewModel.songs.isEmpty
                   ? const Center(child: CircularProgressIndicator())
@@ -171,20 +173,7 @@ class _MusicScreenState extends State<MusicScreen> {
                                                 );
                                               }
 
-                                              //       Just Test
-/*
-                                                  // Show equalizer only if the song is fully loaded and playing
-                                                  if (viewModel.isPlaying) {
-                                                    return GestureDetector(
-                                                      behavior: HitTestBehavior.translucent,
-                                                      onTap: () => viewModel.pause(),
-                                                      child: Padding(
-                                                        padding: const EdgeInsets.all(4.0),
-                                                        child: EqualizerAnimation(isPaused: false),
-                                                      ),
-                                                    );
-                                                  }
-                                                  */
+                                              // list song
 
                                               if (viewModel.isPlaying &&
                                                   !viewModel.isBuffering &&
@@ -230,169 +219,214 @@ class _MusicScreenState extends State<MusicScreen> {
                       },
                     ),
             ),
-
-            /*
-    if (viewModel.currentSong != null)
-    // your bottom player UI (slider, duration, controls)
-    // keep it as you already have
-    ...[
-    Slider(
-    value: viewModel.position.inSeconds.toDouble(),
-    max: viewModel.duration.inSeconds.toDouble() > 0
-    ? viewModel.duration.inSeconds.toDouble()
-        : 1.0,
-    onChanged: (value) => viewModel.seekTo(Duration(seconds: value.toInt())),
-    ),
-    Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-    child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-    Text(_formatTime(viewModel.position)),
-    Text(_formatTime(viewModel.duration)),
-    ],
-    ),
-    ),
-    Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-    IconButton(icon: const Icon(Icons.skip_previous), onPressed: viewModel.playPrevious),
-    viewModel.isBuffering
-    ? const SizedBox(
-    height: 40,
-    width: 40,
-    child: CircularProgressIndicator(strokeWidth: 3),
-    )
-        : IconButton(
-    icon: Icon(
-    viewModel.isPlaying
-    ? Icons.pause_circle_filled
-        : Icons.play_circle_fill,
-    ),
-    iconSize: 40,
-    onPressed: () {
-    viewModel.isPlaying
-    ? viewModel.pause()
-        : viewModel.currentSong != null ? viewModel.resume()
-          : viewModel.play(viewModel.currentIndex);
-
-    },
-    ),
-    IconButton(icon: const Icon(Icons.skip_next), onPressed: viewModel.playNext),
-    ],
-    ),
-    ],
-    ],
-    ),
-    ],
-    ));
 */
 
-/*
-    if (viewModel.currentSong != null)
+    Expanded(
+    child: Builder(
+    builder: (context) {
+    // 1️⃣  Loading spinner
+    if (viewModel.isLoading && viewModel.songs.isEmpty) {
+    return const Center(child: CircularProgressIndicator());
+    }
 
-      Positioned(
-        left: 16,
-        right: 16,
-        bottom: 20,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white12.withAlpha(70), // modern semi-transparent dark
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(100),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Song Image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  viewModel.currentSong!.image,
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                ),
-              ),
+    //------------------------------------------------------------
+    // 2️⃣  Decide which song list to show
+    //------------------------------------------------------------
+    final bool offline         = !viewModel.hasInternet;
+    final bool hasCachedSongs  = viewModel.cachedSongs.isNotEmpty;
+    final songsToDisplay       = offline && hasCachedSongs
+    ? viewModel.cachedSongs        // show cached list when offline
+        : viewModel.songs;             // otherwise use normal list
 
-              const SizedBox(width: 12),
-
-              // Song Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      viewModel.currentSong!.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      viewModel.currentSong!.description,
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(160),
-                        fontSize: 13,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Controls: Previous - Play/Pause - Next
-              IconButton(
-                icon: const Icon(Icons.skip_previous, color: Colors.white),
-                onPressed: viewModel.playPrevious,
-              ),
-              viewModel.isBuffering
-                  ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-                  : IconButton(
-                icon: Icon(
-                  viewModel.isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  viewModel.isPlaying
-                      ? viewModel.pause()
-                      : viewModel.play(viewModel.currentIndex);
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.skip_next, color: Colors.white),
-                onPressed: viewModel.playNext,
-              ),
-            ],
-          ),
-        ),
-      ),
-
-
-    ]
+    //------------------------------------------------------------
+    // 3️⃣  Nothing to show – present friendly message
+    //------------------------------------------------------------
+    if (songsToDisplay.isEmpty) {
+    return Center(
+    child: Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+    const Icon(Icons.music_off, size: 64, color: Colors.white54),
+    const SizedBox(height: 16),
+    Text(
+    offline
+    ? 'You\'re offline and no songs are cached.'
+        : 'No songs available.',
+    style: const TextStyle(color: Colors.white70, fontSize: 16),
+    textAlign: TextAlign.center,
     ),
-    ]));
+    ],
+    ),
+    );
+    }
+
+    //------------------------------------------------------------
+    // 4️⃣  Render the list (all your original row UI unchanged)
+    //------------------------------------------------------------
+    return ListView.builder(
+    itemCount: songsToDisplay.length,
+    itemBuilder: (context, index) {
+    final song      = songsToDisplay[index];
+    final isCurrent = viewModel.currentIndex == index;
+    final isCached  = viewModel.cachedSongs.contains(song);
+
+    /* ----- keep your existing row widget below -----
+             The only extra we add is a tiny “cached” badge,
+             but you can remove it if you prefer.            */
+
+    return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
+    child: ClipRRect(
+    borderRadius: BorderRadius.circular(20),
+    child: BackdropFilter(
+    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+    child: Container(
+    decoration: BoxDecoration(
+    color: Colors.white24.withAlpha(70),
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(color: Colors.white24),
+    boxShadow: [
+    BoxShadow(
+    color: Colors.black12.withAlpha(70),
+    blurRadius: 12,
+    offset: const Offset(0, 4),
+    ),
+    ],
+    ),
+    child: InkWell(
+    onTap: () {
+    if (viewModel.currentIndex == index) {
+    viewModel.isPlaying
+    ? viewModel.pause()
+        : viewModel.play(index);
+    } else {
+    viewModel.play(index);
+    }
+    },
+    borderRadius: BorderRadius.circular(20),
+    child: Padding(
+    padding: const EdgeInsets.all(12.0),
+    child: Row(
+    children: [
+    // album art with default fallback
+    ClipRRect(
+    borderRadius: BorderRadius.circular(14),
+    child: CachedNetworkImage(
+    imageUrl: song.image,
+    width: 60,
+    height: 60,
+    fit: BoxFit.cover,
+    placeholder: (c, u) => const SizedBox(
+    width: 60,
+    height: 60,
+    child: Center(
+    child: CircularProgressIndicator(strokeWidth: 2),
+    ),
+    ),
+    errorWidget: (c, u, e) => Image.asset(
+    'assets/default_cover.png',
+    width: 60,
+    height: 60,
+    fit: BoxFit.cover,
+    ),
+    ),
+    ),
+
+    const SizedBox(width: 14),
+
+    // title + description (+ cached badge)
+    Expanded(
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    Row(
+    children: [
+    Expanded(
+    child: Text(
+    song.name,
+    style: GoogleFonts.poppins(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: Colors.white,
+    ),
+    ),
+    ),
+    if (isCached)
+    const Icon(Icons.download_done,
+    size: 16, color: Colors.greenAccent),
+    ],
+    ),
+    const SizedBox(height: 4),
+    Text(
+    song.description,
+    style: GoogleFonts.poppins(
+    fontSize: 13,
+    color: Colors.white70,
+    ),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    ),
+    ],
+    ),
+    ),
+
+    const SizedBox(width: 8),
+
+    // play / equalizer / spinner (unchanged logic)
+    Builder(
+    builder: (_) {
+    if (isCurrent) {
+    if (viewModel.isPlayingLoading ||
+    viewModel.isBuffering) {
+    return const SizedBox(
+    height: 24,
+    width: 24,
+    child: CircularProgressIndicator(
+    strokeWidth: 2,
+    valueColor: AlwaysStoppedAnimation<Color>(
+    Colors.white),
+    ),
+    );
+    }
+    if (viewModel.isPlaying &&
+    !viewModel.isBuffering &&
+    viewModel.playerState ==
+    ProcessingState.ready) {
+    return GestureDetector(
+    behavior: HitTestBehavior.translucent,
+    onTap: () => viewModel.pause(),
+    child: const Padding(
+    padding: EdgeInsets.all(4.0),
+    child: EqualizerAnimation(isPaused: false),
+    ),
+    );
+    }
+    }
+    return IconButton(
+    icon: const Icon(Icons.play_arrow,
+    size: 28, color: Colors.white),
+    onPressed: () => viewModel.play(index),
+    );
+    },
+    ),
+    ],
+    ),
+    ),
+    ),
+    ),
+    ),
+    ),
+    );
+    },
+    );
+    },
+    ),
+    ),
 
 
- */
 
-            // ───────── Mini-Player Widget (place inside Stack) ─────────
+
+    // ───────── Mini-Player Widget (place inside Stack) ─────────
             if (viewModel.currentSong != null)
               AnimatedSlide(
                 duration: const Duration(milliseconds: 400),
