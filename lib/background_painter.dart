@@ -8,9 +8,9 @@ class WaveBackgroundPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          Color(0xFF0F2027),
-          Color(0xFF203A43),
-          Color(0xFF2C5364),
+          Color(0xFF0F2630),
+          Color(0xFF294A55),
+          Color(0xFF4D7587),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 

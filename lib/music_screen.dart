@@ -468,22 +468,45 @@ class _MusicScreenState extends State<MusicScreen> {
                         if (d.primaryDelta! < -10) _openFullPlayer(context);
                       },
                       onTap: () => _openFullPlayer(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Color(0xFF131B1E),
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(16)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color(0xFF20323A),
-                              blurRadius: 10,
-                              offset: const Offset(0, -2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
+                      child:
+
+
+    Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    decoration: BoxDecoration(
+    gradient: const LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+    Color(0xFF507180), // lighter top-left
+    Color(0xFF10232B), // darker bottom-right
+    ],
+    ),
+    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    boxShadow: [
+    BoxShadow(
+    color: Color.fromARGB(255, 62, 66, 67), // ≈60% opacity
+    blurRadius: 20,
+    offset: const Offset(0, -4),
+    ),
+    BoxShadow(
+    color: Color.fromARGB(51, 0, 0, 0), // ≈20% opacity
+    blurRadius: 4,
+    spreadRadius: -2,
+    offset: const Offset(0, 2),
+    ),
+    ],
+    border: Border.all(
+    color: Color.fromARGB(13, 255, 255, 255), // ≈5% opacity
+    width: 0.6,
+    ),
+    ),
+
+
+
+
+
+    child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             // ─── Controls Row ───
