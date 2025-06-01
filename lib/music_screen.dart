@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
+import 'background_painter.dart';
 import 'equalizer_animation.dart';
 import 'full_screen_player.dart';
 import 'music_view_model.dart';
@@ -47,13 +48,36 @@ class _MusicScreenState extends State<MusicScreen> {
     });
 
     return Scaffold(
-        appBar: AppBar(title: const Text('Music Player')),
-        body: Stack(children: [
+        appBar: AppBar(title: const Text('Brahvi & Balochi Songs')),
+        body:
+
+        Stack(
+          children: [
+            // ─── Wave Background ───
+            Positioned.fill(
+              child: CustomPaint(
+                painter: WaveBackgroundPainter(),
+              ),
+            ),
+
+            // ─── Your Main Content ───
+            Container(
+              padding: const EdgeInsets.all(16),
+
+
+
+        child:
+
+
+
+
+
+        Stack(children: [
           Column(children: [
             if (!viewModel.hasInternet)
               Container(
                 width: double.infinity,
-                color: Colors.grey,
+                color: Colors.orange.withAlpha(100),
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: const Center(
                   child: Text(
@@ -448,12 +472,12 @@ class _MusicScreenState extends State<MusicScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.95),
+                          color: Color(0xFF131B1E),
                           borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(16)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Color(0xFF20323A),
                               blurRadius: 10,
                               offset: const Offset(0, -2),
                             ),
@@ -547,6 +571,8 @@ class _MusicScreenState extends State<MusicScreen> {
                             ),
 
                             // ─── Slider ───
+
+                      /*
                             Slider(
                               value: viewModel.position.inSeconds.toDouble(),
                               max: viewModel.duration.inSeconds > 0
@@ -554,9 +580,36 @@ class _MusicScreenState extends State<MusicScreen> {
                                   : 1.0,
                               onChanged: (v) => viewModel
                                   .seekTo(Duration(seconds: v.toInt())),
-                              activeColor: Colors.white,
+                              activeColor: Colors.orange,
                               inactiveColor: Colors.white24,
+                            ),*/
+
+
+
+                            SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                trackHeight: 6,
+                                activeTrackColor: Color(0xFF235C70),
+                                inactiveTrackColor: Color(0xFF54676E),
+                                trackShape: const RoundedRectSliderTrackShape(),
+                                thumbColor: Color(0xFF72C7E3),
+                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                                overlayColor: Colors.orangeAccent,
+                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+                              ),
+                              child: Slider(
+                                value: viewModel.position.inSeconds.toDouble(),
+                                max: viewModel.duration.inSeconds > 0
+                                    ? viewModel.duration.inSeconds.toDouble()
+                                    : 1.0,
+                                onChanged: (v) =>
+                                    viewModel.seekTo(Duration(seconds: v.toInt())),
+                              ),
                             ),
+
+
+
+
 
                             // ─── Timer Text ───
                             Row(
@@ -582,7 +635,7 @@ class _MusicScreenState extends State<MusicScreen> {
                 ),
               ),
           ])
-        ]));
+        ]))]));
   }
 
   void _openFullPlayer(BuildContext context) {

@@ -36,6 +36,7 @@ class MusicViewModel extends ChangeNotifier {
 
 
 
+
   List<Song> get cachedSongs => _cachedSongs;
   List<Song> get songs => _songs;
   int get currentIndex => _currentIndex;
@@ -55,6 +56,7 @@ class MusicViewModel extends ChangeNotifier {
     setupPositionListener();
     monitorConnectivity();
   }
+
 
 
 /*
@@ -288,6 +290,11 @@ class MusicViewModel extends ChangeNotifier {
       final filePath = await _getLocalFilePath(song.url);
       final file = File(filePath);
 
+
+
+      // ——- waveform setup (no-audio) ——-
+
+
       try {
         if (await file.exists()) {
           await _player.setFilePath(filePath);
@@ -310,7 +317,12 @@ class MusicViewModel extends ChangeNotifier {
     } else {
       await _player.play();
     }
+
+
   }
+
+
+
 
   void _downloadSong(String url, String savePath) async {
     try {

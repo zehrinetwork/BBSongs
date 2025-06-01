@@ -53,8 +53,24 @@ class FullScreenPlayer extends StatelessWidget {
               // Album Art
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: Image.network(song.image, width: 300, height: 300, fit: BoxFit.cover),
+                child: Image.network(
+                  viewModel.currentSong!.image,
+                  width: 300,
+                  height: 300,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.asset(
+                      'assets/default_cover.png',
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    );
+                  },
+                ),
               ),
+
+
+
               const SizedBox(height: 30),
 
               // Song Info
@@ -72,7 +88,7 @@ class FullScreenPlayer extends StatelessWidget {
               const SizedBox(height: 30),
 
               // Slider
-              Slider(
+           /*   Slider(
                 value: viewModel.position.inSeconds.toDouble(),
                 max: viewModel.duration.inSeconds.toDouble() > 0
                     ? viewModel.duration.inSeconds.toDouble()
@@ -81,7 +97,29 @@ class FullScreenPlayer extends StatelessWidget {
                     viewModel.seekTo(Duration(seconds: value.toInt())),
                 activeColor: Colors.white,
                 inactiveColor: Colors.white24,
+              ),*/
+
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 6,
+                  activeTrackColor: Color(0xFF235C70),
+                  inactiveTrackColor: Color(0xFF54676E),
+                  trackShape: const RoundedRectSliderTrackShape(),
+                  thumbColor: Color(0xFF72C7E3),
+                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                  overlayColor: Colors.orangeAccent,
+                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+                ),
+                child: Slider(
+                  value: viewModel.position.inSeconds.toDouble(),
+                  max: viewModel.duration.inSeconds > 0
+                      ? viewModel.duration.inSeconds.toDouble()
+                      : 1.0,
+                  onChanged: (v) =>
+                      viewModel.seekTo(Duration(seconds: v.toInt())),
+                ),
               ),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -107,7 +145,7 @@ class FullScreenPlayer extends StatelessWidget {
                   )
                       : _buildControlButton(
                     viewModel.isPlaying ? Icons.pause : Icons.play_arrow,
-                    size: 60,
+                    size: 50,
                     iconColor: Colors.black,
                     backgroundColor: Colors.white,
                     onTap: () {
