@@ -1,10 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
+import 'package:song/uploadscreen.dart';
 import 'dart:ui';
+import 'auth_service.dart';
 import 'background_painter.dart';
+import 'email_signup.dart';
 import 'equalizer_animation.dart';
 import 'full_screen_player.dart';
 import 'music_view_model.dart';
@@ -18,12 +23,17 @@ class MusicScreen extends StatefulWidget {
 
 class _MusicScreenState extends State<MusicScreen> {
   final String apiUrl =
-      'https://mocki.io/v1/290de512-4dfb-4bd2-9696-d13de5439a00'; // Replace with your actual API URL
+      'https://mocki.io/v1/a1dd64ab-543f-4444-a717-81843382d07a'; // Replace with your actual API URL
+
+  String displayName = '';
+  final user = FirebaseAuth.instance.currentUser;
+
 
   @override
   void initState() {
     super.initState();
     Provider.of<MusicViewModel>(context, listen: false).fetchSongs(apiUrl);
+   fetchDisplayName();
   }
 
   String _formatTime(Duration duration) {
@@ -32,6 +42,23 @@ class _MusicScreenState extends State<MusicScreen> {
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return '$minutes:$seconds';
   }
+
+
+  void fetchDisplayName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (doc.exists) {
+        setState(() {
+          displayName = doc['name'];
+        });
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +75,90 @@ class _MusicScreenState extends State<MusicScreen> {
     });
 
     return Scaffold(
-        appBar: AppBar(title: const Text('Brahvi & Balochi Songs')),
+
+
+      appBar: AppBar(
+        title: Text(displayName.isNotEmpty
+            ? 'Welcome, $displayName'
+            : 'Brahvi & Balochi Songs'),
+
+
+
+        actions: [
+          user != null
+              ?
+
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.upload, color: Colors.white),
+            onSelected: (value) async {
+              if (value == 'upload' || value == 'signin') {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AuthScreen()),
+                );
+
+                if (result == true) {
+                  setState(() {}); // Reflect user update in AppBar
+                }
+              } else if (value == 'logout') {
+                await FirebaseAuth.instance.signOut();
+                setState(() {}); // Rebuild after logout
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Logged out')),
+                );
+              }
+            }
+
+
+        ,
+            itemBuilder: (BuildContext context) {
+              final user = FirebaseAuth.instance.currentUser;
+              if (user != null) {
+                return [
+                  const PopupMenuItem(
+                    value: 'upload',
+                    child: Text('Upload'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'logout',
+                    child: Text('Logout'),
+                  ),
+                ];
+              } else {
+                return [
+                  const PopupMenuItem(
+                    value: 'signin',
+                    child: Text('Sign In'),
+                  ),
+                ];
+              }
+            },
+          )
+
+
+
+              : IconButton(
+            icon: const Icon(Icons.cloud_upload, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AuthScreen()),
+              );
+            },
+          ),
+        ],
+
+
+
+
+
+
+      ),
+
+
+
+
+
         body:
 
         Stack(
@@ -680,4 +790,5 @@ class _MusicScreenState extends State<MusicScreen> {
       },
     );
   }
+
 }

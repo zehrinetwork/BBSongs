@@ -3,10 +3,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:song/uploadscreen.dart';
 
 import 'model.dart';
 
@@ -33,6 +36,8 @@ class MusicViewModel extends ChangeNotifier {
   bool get hasInternet => _hasInternet;
   final List<Song> _cachedSongs = [];
 
+  User? _firebaseUser;
+  User? get firebaseUser => _firebaseUser;
 
 
 
@@ -554,4 +559,38 @@ class MusicViewModel extends ChangeNotifier {
 
 
   }
+
+  Future<void> handleUpload(BuildContext context) async {
+    if (_firebaseUser == null) {
+      try {
+        final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+        final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
+
+        if (googleAuth == null) return;
+
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+        _firebaseUser = userCredential.user;
+        notifyListeners();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in failed: $e')),
+        );
+        return;
+      }
+    }
+
+    // Open the upload screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) =>  UploadScreen()),
+    );
+  }
+
+
+
 }
