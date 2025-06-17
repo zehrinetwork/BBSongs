@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
-import 'package:song/uploadscreen.dart';
 import 'dart:ui';
-import 'auth_service.dart';
 import 'background_painter.dart';
 import 'email_signup.dart';
 import 'equalizer_animation.dart';
@@ -94,7 +92,7 @@ class _MusicScreenState extends State<MusicScreen> {
               if (value == 'upload' || value == 'signin') {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AuthScreen()),
+                  MaterialPageRoute(builder: (_) => const SignUpScreen()),
                 );
 
                 if (result == true) {
@@ -142,7 +140,7 @@ class _MusicScreenState extends State<MusicScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AuthScreen()),
+                MaterialPageRoute(builder: (context) => SignUpScreen()),
               );
             },
           ),
