@@ -92,7 +92,7 @@ class _MusicScreenState extends State<MusicScreen> {
               if (value == 'upload' || value == 'signin') {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const SignUpScreen()),
+                  MaterialPageRoute(builder: (_) => const AuthScreen()),
                 );
 
                 if (result == true) {
@@ -140,7 +140,7 @@ class _MusicScreenState extends State<MusicScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => SignUpScreen()),
+                MaterialPageRoute(builder: (context) => AuthScreen()),
               );
             },
           ),
