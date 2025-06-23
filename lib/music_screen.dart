@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
+import 'package:song/song_upload_screen.dart';
 import 'dart:ui';
 import 'background_painter.dart';
 import 'email_signup.dart';
@@ -89,7 +90,7 @@ class _MusicScreenState extends State<MusicScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.upload, color: Colors.white),
             onSelected: (value) async {
-              if (value == 'upload' || value == 'signin') {
+              if (value == 'signin') {
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const EmailAuthScreen()),
@@ -98,7 +99,15 @@ class _MusicScreenState extends State<MusicScreen> {
                 if (result == true) {
                   setState(() {}); // Reflect user update in AppBar
                 }
-              } else if (value == 'logout') {
+              } else if (value == 'upload'){
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AudioUploadScreen()),
+                );
+              }
+
+
+              else if (value == 'logout') {
                 await FirebaseAuth.instance.signOut();
                 setState(() {}); // Rebuild after logout
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -115,7 +124,7 @@ class _MusicScreenState extends State<MusicScreen> {
                 return [
                   const PopupMenuItem(
                     value: 'upload',
-                    child: Text('Upload'),
+                    child: Text('upload'),
                   ),
                   const PopupMenuItem(
                     value: 'logout',

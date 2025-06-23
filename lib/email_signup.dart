@@ -243,6 +243,76 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
     }
   }
 
+
+  // In your EmailAuthScreen class
+
+// ... (keep everything else the same) ...
+
+// --- REVISED _handleSignIn METHOD ---
+  Future<void> _handleSignIn() async {
+    // 1. Validate the form
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 2. Attempt to sign in
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      // 3. If successful, show the success message
+      // This MUST be done before the delay and navigation
+      if (!mounted) return;
+      _showSnack('Sign-in successful! Redirecting...', isError: false);
+
+      // 4. Wait for 2 seconds so the user can see the message
+      await Future.delayed(const Duration(seconds: 2));
+
+      // 5. Navigate away
+      // We call _goToMusicUI which will handle the actual navigation.
+      _goToMusicUI();
+
+    } on FirebaseAuthException catch (e) {
+      _showSnack(e.message ?? 'Sign‑in failed', isError: true);
+    } catch (e) {
+      _showSnack('Something went wrong, please try again', isError: true);
+    } finally {
+      // We only set isLoading to false if the widget is still mounted
+      // (i.e., if navigation hasn't happened yet, which is unlikely here
+      // but good practice).
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+// --- REVISED _goToMusicUI METHOD ---
+  void _goToMusicUI() {
+    if (!mounted) return;
+    // This pushReplacement will replace the current screen (EmailAuthScreen)
+    // with the MusicScreen. The back button will not bring the user back here.
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const MusicScreen()),
+    );
+  }
+
+// --- REVISED _showSnack HELPER METHOD ---
+// Let's add an optional parameter to style success vs. error messages.
+  void _showSnack(String message, {bool isError = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.redAccent.withAlpha(140) : Colors.green.withAlpha(140),
+      ),
+    );
+  }
+
+
+
+  /*
   Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -263,6 +333,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
     }
   }
 
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
@@ -279,4 +350,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
       MaterialPageRoute(builder: (_) => const MusicScreen()),
     );
   }
+
+  
+   */
 }
