@@ -11,6 +11,7 @@ import 'background_painter.dart';
 import 'email_signup.dart';
 import 'equalizer_animation.dart';
 import 'full_screen_player.dart';
+import 'mesaage_upload.dart';
 import 'music_view_model.dart';
 
 class MusicScreen extends StatefulWidget {
@@ -90,10 +91,10 @@ class _MusicScreenState extends State<MusicScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.upload, color: Colors.white),
             onSelected: (value) async {
-              if (value == 'signin') {
+              if (value == 'Upload') { //Sign in later
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const EmailAuthScreen()),
+                  MaterialPageRoute(builder: (_) => const UploadComingSoonPage()), //EmailAuthScreen()
                 );
 
                 if (result == true) {
@@ -102,7 +103,7 @@ class _MusicScreenState extends State<MusicScreen> {
               } else if (value == 'upload'){
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AudioUploadScreen()),
+                  MaterialPageRoute(builder: (_) => const UploadComingSoonPage()),
                 );
               }
 
@@ -149,7 +150,7 @@ class _MusicScreenState extends State<MusicScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => EmailAuthScreen()),
+                MaterialPageRoute(builder: (context) => UploadComingSoonPage()),// this is authAcr should be
               );
             },
           ),
@@ -797,5 +798,9 @@ class _MusicScreenState extends State<MusicScreen> {
       },
     );
   }
+
+
+
+
 
 }

@@ -50,6 +50,7 @@ dependencies:
   cloud_firestore: ^5.6.8
   path: ^1.9.1
   image_picker: ^1.1.2
+  lottie: ^3.3.1
 
 
 dev_dependencies:
