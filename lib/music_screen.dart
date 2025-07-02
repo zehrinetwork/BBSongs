@@ -3,12 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
-import 'package:song/song_upload_screen.dart';
 import 'dart:ui';
 import 'background_painter.dart';
-import 'email_signup.dart';
 import 'equalizer_animation.dart';
 import 'full_screen_player.dart';
 import 'mesaage_upload.dart';
@@ -25,16 +24,78 @@ class _MusicScreenState extends State<MusicScreen> {
   final String apiUrl =
       'https://mocki.io/v1/a1dd64ab-543f-4444-a717-81843382d07a'; // Replace with your actual API URL
 
-  String displayName = '';
-  final user = FirebaseAuth.instance.currentUser;
+//  String displayName = '';
+ // final user = FirebaseAuth.instance.currentUser;
+
+
+  // --- ADMOB STATE VARIABLES ---
+  BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
+  NativeAd? _nativeAd;
+  bool _isNativeAdLoaded = false;
+
+  // TODO: Replace with your real Ad Unit IDs before publishing
+  final String _bannerAdUnitId = "ca-app-pub-3940256099942544/6300978111"; // Test ID
+  final String _nativeAdUnitId = "ca-app-pub-3940256099942544/2247696110"; // Test ID
 
 
   @override
   void initState() {
     super.initState();
     Provider.of<MusicViewModel>(context, listen: false).fetchSongs(apiUrl);
-   fetchDisplayName();
+ //  fetchDisplayName();
+    _loadBannerAd();
+    _loadNativeAd();
   }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    _nativeAd?.dispose();
+    super.dispose();
+  }
+  void _loadBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: _bannerAdUnitId,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isBannerAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          ad.dispose();
+        },
+      ),
+    )..load();
+  }
+
+  void _loadNativeAd() {
+    _nativeAd = NativeAd(
+      adUnitId: _nativeAdUnitId,
+      factoryId: 'listTile', // Required for iOS, good practice for Android
+      request: const AdRequest(),
+      listener: NativeAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isNativeAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+        },
+      ),
+    );
+    _nativeAd!.load();
+  }
+
+  // --- END ADMOB ---
+
+
+
+
 
   String _formatTime(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
@@ -44,6 +105,7 @@ class _MusicScreenState extends State<MusicScreen> {
   }
 
 
+  /*
   void fetchDisplayName() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -58,7 +120,7 @@ class _MusicScreenState extends State<MusicScreen> {
       }
     }
   }
-
+*/
 
   @override
   Widget build(BuildContext context) {
@@ -76,100 +138,10 @@ class _MusicScreenState extends State<MusicScreen> {
 
     return Scaffold(
 
-
       appBar: AppBar(
-        title: Text(displayName.isNotEmpty
-            ? 'Welcome, $displayName'
-            : 'Brahvi & Balochi Songs'),
-
-
-
-        actions: [
-          user != null
-              ?
-
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.upload, color: Colors.white),
-            onSelected: (value) async {
-              if (value == 'Upload') { //Sign in later
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const UploadComingSoonPage()), //EmailAuthScreen()
-                );
-
-                if (result == true) {
-                  setState(() {}); // Reflect user update in AppBar
-                }
-              } else if (value == 'upload'){
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const UploadComingSoonPage()),
-                );
-              }
-
-
-              else if (value == 'logout') {
-                await FirebaseAuth.instance.signOut();
-                setState(() {}); // Rebuild after logout
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Logged out')),
-                );
-              }
-            }
-
-
-        ,
-            itemBuilder: (BuildContext context) {
-              final user = FirebaseAuth.instance.currentUser;
-              if (user != null) {
-                return [
-                  const PopupMenuItem(
-                    value: 'upload',
-                    child: Text('upload'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'logout',
-                    child: Text('Logout'),
-                  ),
-                ];
-              } else {
-                return [
-                  const PopupMenuItem(
-                    value: 'signin',
-                    child: Text('Sign In'),
-                  ),
-                ];
-              }
-            },
-          )
-
-
-
-              : IconButton(
-            icon: const Icon(Icons.cloud_upload, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => UploadComingSoonPage()),// this is authAcr should be
-              );
-            },
-          ),
-        ],
-
-
-
-
-
-
+        title: Text('Brahvi & Balochi Songs'),
       ),
-
-
-
-
-
-        body:
-
-        Stack(
+        body: Stack(
           children: [
             // ─── Wave Background ───
             Positioned.fill(
