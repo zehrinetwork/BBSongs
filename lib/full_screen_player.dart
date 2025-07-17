@@ -106,8 +106,8 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                     errorBuilder: (context, error, stackTrace) {
                       return Image.asset(
                         'assets/default_cover.png',
-                        width: 50,
-                        height: 50,
+                        width: 150,
+                        height: 150,
                         fit: BoxFit.cover,
                       );
                     },
@@ -116,7 +116,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
 
 
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 150),
 
                 // Song Info
                 Text(

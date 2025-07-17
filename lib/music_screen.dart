@@ -11,6 +11,8 @@ import 'full_screen_player.dart';
 import 'model.dart';
 import 'music_view_model.dart';
 
+
+// REPLACE YOUR EXISTING MusicScreen and _MusicScreenState with this
 class MusicScreen extends StatefulWidget {
   const MusicScreen({super.key});
 
@@ -19,49 +21,36 @@ class MusicScreen extends StatefulWidget {
 }
 
 class _MusicScreenState extends State<MusicScreen> {
-  final String apiUrl =
-      'https://mocki.io/v1/6e31b91c-6fd8-40bf-9ebe-9908c305aeb1';
+  final String apiUrl = 'https://mocki.io/v1/6e31b91c-6fd8-40bf-9ebe-9908c305aeb1';
 
   // --- ADMOB STATE VARIABLES ---
   BannerAd? _bannerAd;
   bool _isBannerAdLoaded = false;
-
-  NativeAd? _nativeAd;
-  bool _isNativeAdLoaded = false;
   final String _bannerAdUnitId = "ca-app-pub-3940256099942544/6300978111"; // Test ID
-  final String _nativeAdUnitId = "ca-app-pub-3940256099942544/2247696110"; // Test ID
 
-  // --- LIST STATE ---
-  List<Object> _listItems = [];
-  final int _adInterval = 4; // Show an ad after every 4 songs
-  bool _isLoading = true; // Add a local loading state
-
+  // --- UI STATE ---
+  final int _adInterval = 4; // Show an ad AFTER every 4 songs
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Start the sequential loading process
     _loadData();
     _loadBannerAd();
   }
 
   void _loadData() async {
+    setState(() { _isLoading = true; });
     final viewModel = Provider.of<MusicViewModel>(context, listen: false);
-
-    // 1. Wait for songs to be fetched
     await viewModel.fetchSongs(apiUrl);
-
-    // If the widget is still mounted after the async call, proceed
     if (mounted) {
-      // 2. Now that songs are available, load the ad
-      _loadNativeAd();
+      setState(() { _isLoading = false; });
     }
   }
 
   @override
   void dispose() {
     _bannerAd?.dispose();
-    _nativeAd?.dispose();
     super.dispose();
   }
 
@@ -71,73 +60,10 @@ class _MusicScreenState extends State<MusicScreen> {
       request: const AdRequest(),
       size: AdSize.banner,
       listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          setState(() {
-            _isBannerAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, err) {
-          ad.dispose();
-        },
+        onAdLoaded: (ad) { if (mounted) setState(() { _isBannerAdLoaded = true; }); },
+        onAdFailedToLoad: (ad, err) { ad.dispose(); },
       ),
     )..load();
-  }
-
-
-  void _loadNativeAd() {
-    // If there are no songs, don't bother loading an ad.
-    // Just build the list with what we have (which is nothing).
-    final songs = Provider
-        .of<MusicViewModel>(context, listen: false)
-        .songs;
-    if (songs.isEmpty) {
-      _updateListWithAds(); // Will build an empty list and show the message
-      return;
-    }
-
-    _nativeAd = NativeAd(
-      adUnitId: _nativeAdUnitId,
-      factoryId: 'listTile',
-      request: const AdRequest(),
-      listener: NativeAdListener(
-        onAdLoaded: (ad) {
-          // Ad loaded successfully
-          setState(() {
-            _nativeAd = ad as NativeAd;
-            _isNativeAdLoaded = true;
-            _updateListWithAds(); // Rebuild list with the loaded ad
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          // Ad failed, so we don't have an ad to show.
-          ad.dispose();
-          _isNativeAdLoaded = false;
-          // IMPORTANT: Still update the list, but now it will only contain songs.
-          _updateListWithAds();
-        },
-      ),
-    );
-    _nativeAd!.load();
-  }
-
-  void _updateListWithAds() {
-    final viewModel = Provider.of<MusicViewModel>(context, listen: false);
-    List<Object> mixedList = [];
-    final songsToDisplay = viewModel.songs; // Use the normal song list
-
-    for (int i = 0; i < songsToDisplay.length; i++) {
-      mixedList.add(songsToDisplay[i]);
-      // Insert an ad at the specified interval, ONLY if it's loaded
-      if (_isNativeAdLoaded && (i + 1) % _adInterval == 0 &&
-          i < songsToDisplay.length - 1) {
-        mixedList.add(_nativeAd!);
-      }
-    }
-
-    setState(() {
-      _listItems = mixedList;
-      _isLoading = false; // Turn off the loading indicator
-    });
   }
 
   String _formatTime(Duration duration) {
@@ -150,12 +76,13 @@ class _MusicScreenState extends State<MusicScreen> {
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<MusicViewModel>(context);
+    final songs = viewModel.songs;
+
+    // Calculate how many ads we *could* show.
+    final adCount = (songs.length / _adInterval).floor();
 
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Brahvi & Balochi Songs'),
-        ),
-
+        appBar: AppBar(title: const Text('Brahvi & Balochi Songs')),
         bottomNavigationBar: (_bannerAd != null && _isBannerAdLoaded)
             ? SafeArea(
           child: Container(
@@ -165,280 +92,191 @@ class _MusicScreenState extends State<MusicScreen> {
             child: AdWidget(ad: _bannerAd!),
           ),
         )
-            : null, // If ad is not loaded, show nothing
-
+            : null,
         body: Stack(children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: WaveBackgroundPainter(),
-            ),
-          ),
+          Positioned.fill(child: CustomPaint(painter: WaveBackgroundPainter())),
           Container(
             padding: const EdgeInsets.only(top: 16),
-            // Remove horizontal padding
-            child: Stack(children: [
-              Column(children: [
-                if (!viewModel.hasInternet)
-                  Container(
-                    width: double.infinity,
-                    color: Colors.orange.withAlpha(100),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: const Center(
-                      child: Text('You are offline',
-                          style: TextStyle(color: Colors.white)),
-                    ),
-                  ),
-                Expanded(
-                  child: Builder(
-                    builder: (context) {
-                      // Use our local loading state
-                      if (_isLoading) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
+            child: Column(children: [
+              if (!viewModel.hasInternet)
+                Container(
+                  width: double.infinity,
+                  color: Colors.orange.withAlpha(100),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: const Center(child: Text('You are offline', style: TextStyle(color: Colors.white))),
+                ),
+              Expanded(
+                child: Builder(
+                  builder: (context) {
+                    if (_isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                      if (_listItems.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.music_off,
-                                  size: 64, color: Colors.white54),
-                              const SizedBox(height: 16),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0),
-                                child: Text(
-                                  !viewModel.hasInternet
-                                      ? 'You\'re offline and no songs are cached.'
-                                      : 'No songs available. Please try again later.',
-                                  style: const TextStyle(
-                                      color: Colors.white70, fontSize: 16),
-                                  textAlign: TextAlign.center,
-                                ),
+                    if (songs.isEmpty) {
+                      return Center( // Your 'No Songs' UI
+                          child: Text("No songs found.", style: TextStyle(color: Colors.white))
+                      );
+                    }
+
+
+    // In your build method, find the return ListView.builder(...)
+// and replace it with this complete version.
+
+    return ListView.builder(
+    itemCount: songs.length + adCount,
+    itemBuilder: (context, index) {
+    // This part correctly determines if the index is an ad
+    if ((index + 1) % (_adInterval + 1) == 0) {
+    // It returns the AdTile, which is working correctly.
+    return const AdTile();
+    }
+
+    // This part calculates the correct song index
+    final songIndex = index - ((index + 1) / (_adInterval + 1)).floor();
+    final song = songs[songIndex];
+    final isCurrent = viewModel.currentIndex == songIndex;
+    final isCached = viewModel.cachedSongs.contains(song);
+
+    // ---- SONG TILE WIDGET (This is the restored UI code) ----
+    return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
+    child: ClipRRect(
+    borderRadius: BorderRadius.circular(20),
+    child: BackdropFilter(
+    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+    child: Container(
+    decoration: BoxDecoration(
+    color: Colors.white24.withAlpha(70),
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(color: Colors.white24),
+    boxShadow: [
+    BoxShadow(
+    color: Colors.black12.withAlpha(70),
+    blurRadius: 12,
+    offset: const Offset(0, 4),
+    ),
+    ],
+    ),
+    child: InkWell(
+    onTap: () {
+    if (isCurrent) {
+    viewModel.isPlaying ? viewModel.pause() : viewModel.play(songIndex);
+    } else {
+    viewModel.play(songIndex);
+    }
+    },
+    borderRadius: BorderRadius.circular(20),
+    child: Padding(
+    padding: const EdgeInsets.all(12.0),
+    child: Row( // <-- This is the fully restored Row
+    children: [
+    ClipRRect(
+    borderRadius: BorderRadius.circular(14),
+    child: CachedNetworkImage(
+    imageUrl: song.image,
+    width: 60,
+    height: 60,
+    fit: BoxFit.cover,
+    placeholder: (c, u) => const SizedBox(
+    width: 60,
+    height: 60,
+    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+    ),
+    errorWidget: (c, u, e) => Image.asset(
+    'assets/default_cover.png',
+    width: 60,
+    height: 60,
+    fit: BoxFit.cover,
+    ),
+    ),
+    ),
+    const SizedBox(width: 14),
+    Expanded(
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    Row(
+    children: [
+    Expanded(
+    child: Text(
+    song.name, // The song name
+    style: GoogleFonts.poppins(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: Colors.white,
+    ),
+    overflow: TextOverflow.ellipsis,
+    ),
+    ),
+    if (isCached)
+    const Icon(Icons.download_done, size: 16, color: Colors.greenAccent),
+    ],
+    ),
+    const SizedBox(height: 4),
+    Text(
+    song.description,
+    style: GoogleFonts.poppins(
+    fontSize: 13,
+    color: Colors.white70,
+    ),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    ),
+    ],
+    ),
+    ),
+    const SizedBox(width: 8),
+    Builder( // The play/pause/loading button logic
+    builder: (_) {
+    if (isCurrent) {
+    if (viewModel.isPlayingLoading || viewModel.isBuffering) {
+    return const SizedBox(
+    height: 24,
+    width: 24,
+    child: CircularProgressIndicator(
+    strokeWidth: 2,
+    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+    ),
+    );
+    }
+    if (viewModel.isPlaying && !viewModel.isBuffering && viewModel.playerState == ProcessingState.ready) {
+    return GestureDetector(
+    behavior: HitTestBehavior.translucent,
+    onTap: () => viewModel.pause(),
+    child: const Padding(
+    padding: EdgeInsets.all(4.0),
+    child: EqualizerAnimation(isPaused: false),
+    ),
+    );
+    }
+    }
+    return IconButton(
+    icon: const Icon(Icons.play_arrow, size: 28, color: Colors.white),
+    onPressed: () => viewModel.play(songIndex),
+    );
+    },
+    ),
+    ],
+    ),
+    ),
+    ),
+
+
                               ),
-                            ],
+                            ),
                           ),
                         );
-                      }
-
-                      // RENDER THE LIST WITH SONGS AND ADS
-                      return ListView.builder(
-                        itemCount: _listItems.length,
-                        itemBuilder: (context, index) {
-                          final item = _listItems[index];
-
-                          // ---- NATIVE AD WIDGET ----
-                          if (item is NativeAd) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0, vertical: 10),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(20),
-                                child: BackdropFilter(
-                                  filter:
-                                  ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                  child: Container(
-                                    height: 100, // Adjust height as needed
-                                    decoration: BoxDecoration(
-                                      color: Colors.white24.withAlpha(70),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: Colors.white24),
-                                    ),
-                                    child: AdWidget(ad: item),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-
-                          // ---- SONG TILE WIDGET ----
-                          if (item is Song) {
-                            final song = item;
-                            // Find the original index for the player logic
-                            final originalIndex = viewModel.songs.indexOf(song);
-                            final isCurrent = viewModel.currentIndex ==
-                                originalIndex;
-                            final isCached = viewModel.cachedSongs.contains(
-                                song);
-
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0, vertical: 10),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(20),
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(
-                                      sigmaX: 10, sigmaY: 10),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white24.withAlpha(70),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: Colors.white24),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black12.withAlpha(70),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: InkWell(
-                                      onTap: () {
-                                        if (isCurrent) {
-                                          viewModel.isPlaying
-                                              ? viewModel.pause()
-                                              : viewModel.play(originalIndex);
-                                        } else {
-                                          viewModel.play(originalIndex);
-                                        }
-                                      },
-                                      borderRadius: BorderRadius.circular(20),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(12.0),
-                                        child: Row(
-                                          children: [
-                                            ClipRRect(
-                                              borderRadius: BorderRadius
-                                                  .circular(14),
-                                              child: CachedNetworkImage(
-                                                imageUrl: song.image,
-                                                width: 60,
-                                                height: 60,
-                                                fit: BoxFit.cover,
-                                                placeholder: (c, u) =>
-                                                const SizedBox(
-                                                  width: 60,
-                                                  height: 60,
-                                                  child: Center(
-                                                      child: CircularProgressIndicator(
-                                                          strokeWidth: 2)),
-                                                ),
-                                                errorWidget: (c, u, e) =>
-                                                    Image.asset(
-                                                      'assets/default_cover.png',
-                                                      width: 60,
-                                                      height: 60,
-                                                      fit: BoxFit.cover,
-                                                    ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 14),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      Expanded(
-                                                        child: Text(
-                                                          song.name,
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                            fontSize: 16,
-                                                            fontWeight: FontWeight
-                                                                .w600,
-                                                            color: Colors.white,
-                                                          ),
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                        ),
-                                                      ),
-                                                      if (isCached)
-                                                        const Icon(
-                                                            Icons.download_done,
-                                                            size: 16,
-                                                            color: Colors
-                                                                .greenAccent),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    song.description,
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: 13,
-                                                      color: Colors.white70,
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow
-                                                        .ellipsis,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Builder(
-                                              builder: (_) {
-                                                if (isCurrent) {
-                                                  if (viewModel
-                                                      .isPlayingLoading ||
-                                                      viewModel.isBuffering) {
-                                                    return const SizedBox(
-                                                      height: 24,
-                                                      width: 24,
-                                                      child: CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                        valueColor: AlwaysStoppedAnimation<
-                                                            Color>(
-                                                            Colors.white),
-                                                      ),
-                                                    );
-                                                  }
-                                                  if (viewModel.isPlaying &&
-                                                      !viewModel.isBuffering &&
-                                                      viewModel.playerState ==
-                                                          ProcessingState
-                                                              .ready) {
-                                                    return GestureDetector(
-                                                      behavior: HitTestBehavior
-                                                          .translucent,
-                                                      onTap: () =>
-                                                          viewModel.pause(),
-                                                      child: const Padding(
-                                                        padding: EdgeInsets.all(
-                                                            4.0),
-                                                        child: EqualizerAnimation(
-                                                            isPaused: false),
-                                                      ),
-                                                    );
-                                                  }
-                                                }
-                                                return IconButton(
-                                                  icon: const Icon(
-                                                      Icons.play_arrow,
-                                                      size: 28,
-                                                      color: Colors.white),
-                                                  onPressed: () =>
-                                                      viewModel.play(
-                                                          originalIndex),
-                                                );
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                          // Return an empty container for any other case
-                          return Container();
-                        },
-                      );
-                    },
-                  ),
+                      },
+                    );
+                  },
                 ),
-                // The mini-player logic remains the same
-                if (viewModel.currentSong != null)
-                  _buildMiniPlayer(context, viewModel),
-              ]),
+              ),
+              if (viewModel.currentSong != null) _buildMiniPlayer(context, viewModel),
             ]),
-          )
+          ),
         ]));
   }
-
+// ... (Your _buildMiniPlayer and _openFullPlayer methods are unchanged)
   Widget _buildMiniPlayer(BuildContext context, MusicViewModel viewModel) {
     // This method remains unchanged from your original code
     return AnimatedSlide(
@@ -623,5 +461,83 @@ class _MusicScreenState extends State<MusicScreen> {
         );
       },
     );
+  }
+}
+
+
+
+
+
+// ADD THIS NEW WIDGET TO YOUR FILE
+class AdTile extends StatefulWidget {
+  const AdTile({super.key});
+
+  @override
+  State<AdTile> createState() => _AdTileState();
+}
+
+class _AdTileState extends State<AdTile> {
+  NativeAd? _nativeAd;
+  bool _isAdLoaded = false;
+  final String _nativeAdUnitId = "ca-app-pub-3940256099942544/2247696110"; // Test ID
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
+
+  @override
+  void dispose() {
+    _nativeAd?.dispose();
+    super.dispose();
+  }
+
+  void _loadAd() {
+    _nativeAd = NativeAd(
+      adUnitId: _nativeAdUnitId,
+      factoryId: 'listTile',
+      request: const AdRequest(),
+      listener: NativeAdListener(
+        onAdLoaded: (ad) {
+          if (mounted) {
+            setState(() {
+              _isAdLoaded = true;
+            });
+          }
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          debugPrint('Ad failed to load: $error');
+        },
+      ),
+    )..load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isAdLoaded && _nativeAd != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              height: 100,
+              decoration: BoxDecoration(
+                color: Colors.white24.withAlpha(70),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: AdWidget(ad: _nativeAd!),
+            ),
+          ),
+        ),
+      );
+    }
+    // If the ad isn't loaded yet, return an empty container or a placeholder.
+    // This prevents list jank.
+    return const SizedBox.shrink();
   }
 }
